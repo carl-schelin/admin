@@ -1,0 +1,332 @@
+#!/bin/ksh
+
+# added verifyemail check of @ to tack on @intrado.com if it's not there
+
+if [[ -z "$1" ]]
+then
+  echo "ERROR: You must pass user information on the command line"
+  echo ""
+  echo "Usage"
+  echo "newuser [uid] [user_name] [e-mail] [mentor] [group] [id]"
+  echo ""
+  echo "uid = The user name; first initial, last name"
+  echo "user_name = The name of the user. Initial first and last name capitalized separated by an underscore, not a space."
+  echo "e-mail = The e-mail address to the left of the @. Do not include '@intrado.com'."
+  echo "mentor = The person's account you are using as a base for the new account. Defaults to cschelin."
+  echo "group = The group the new user should be a member of."
+  echo "id = If the account needs to be a specific ID, put it here."
+  echo ""
+  exit 1
+fi
+
+# seed: grab information for the SEED user. It extracts homedir and shell info for the new user.
+# 
+SEED=$4
+if [[ -z "$4" ]]
+then
+  SEED="cschelin"
+fi
+
+# used to determine some common values
+OS=`uname`
+
+# set to 'yes' if new user is an admin. Doesn't matter now but it will once the newuser script is 
+# more advanced
+#SYSADMIN="yes"  (not sure why this was set by default to yes)
+if [[ "$5" = "sysadmin" ]]
+then
+  SYSADMIN="yes"
+fi
+
+# newuser
+#   Fill in the fields and run the script
+
+# Some of the fields trigger scripts to check for different values
+# first and last name typically
+USER=`echo $2 | sed -e "s/_/ /g"`
+#
+USERID=$1
+# e-mail info. $EMAIL should be a valid address
+EMAIL=$3
+# account for someone putting '@intrado.com' or even a non-Intrado email in the email field
+VERIFYEMAIL=`echo $EMAIL | grep @`
+if [[ -z "$VERIFYEMAIL" ]]
+then
+  EMAIL="${EMAIL}@intrado.com"
+fi
+
+#######
+# shouldn't need to edit anything past this point
+#######
+
+# just set to warn you if the seed user doesn't exist so you can check the output of check_parameters
+NOSEED="no"
+
+# get standard homedir
+TMPHOME=`grep "^$SEED:" /etc/passwd | cut -f6 -d:`
+if [[ -z $TMPHOME ]]
+then
+# default in case seed user doesn't exist
+  SEED="cschelin"
+  NOSEED="yes"
+  TMPHOME=`grep "^$SEED:" /etc/passwd | cut -f6 -d:`
+fi
+# make sure we have a HOMEDIR value
+if [[ -z $TMPHOME ]]
+then
+  if [[ $OS = "Linux" ]]
+  then
+    TMPHOME="/home/cschelin"
+  fi
+  if [[ $OS = "SunOS" ]]
+  then
+    TMPHOME="/export/home/cschelin"
+  fi
+fi
+HOMEDIR=`dirname $TMPHOME`
+
+# use the shell of the SEED account
+USHELL=`grep "^$SEED:" /etc/passwd | cut -f7 -d:`
+if [[ -z "$USHELL" ]]
+then
+  USHELL=/bin/ksh
+fi
+
+# if group is not specified, then use the group(s) of the SEED account (except for SEED "cschelin")
+   
+if [[ "$5" = "blank" ]]
+ then
+  SEED_GRP=`groups $SEED | sed -e "s/$SEED//g;s/ : //g;s/^ //;s/ /,/g" `
+    if [[ "$SEED" != "cschelin" ]] && [[ -n "$SEED_GRP" ]]
+    then  
+      GRP="-G $SEED_GRP "
+      if [[ $OS = 'SunOS' ]]
+      then
+# primary group so script fails if selected
+        if [[ $SEED_GRP = 'other' ]]
+        then
+          GRP=" "
+        fi
+      fi
+    else
+      GRP=" " 
+    fi
+ else
+  GRP="-G $5 "
+fi
+
+ID="$6"
+# on certain boxes, the UID needs to be researched and set.
+# throw an error if the UID field isn't set and the flag exists
+# indicating the server does have this requirement.
+if [[ $ID = '-1' ]]
+then
+  if [[ -f /opt/intrado/etc/required.uid ]]
+  then
+    echo "ERROR: The UID field isn't set and this server has been identified as requiring this data."
+    echo "Last five UIDs from /etc/passwd:"
+    awk -F: '{print $3}' /etc/passwd | sort -n | tail -5
+    echo ""
+    echo "Enter the proper ID here or press enter to exit the script. "
+    read NEWID
+    if [[ -z $NEWID ]]
+    then
+      exit 1
+    else
+      ID="$NEWID"
+    fi
+  fi
+fi
+
+# Set the ID if appropriate
+if [[ ! -z "$ID" ]]
+then
+  if [[ ! "$ID" = "-1" ]]
+  then
+    IDOUT=`awk -F: '{print $3}' /etc/passwd | grep $ID`
+    if [[ ! -z $IDOUT ]]
+    then
+      echo "ERROR: The passed ID $ID is in use."
+      grep ":$ID:" /etc/passwd
+      exit 1
+    fi
+    ID="-u $ID "
+  else
+    ID=""
+  fi
+fi
+
+# Expire Tru64 accounts
+if [[ $OS = "OSF1" ]]
+then
+  OSF="-x passwd_must_change=1 administrative_lock_applied=0 "
+fi
+
+# is he already on the system? (separate because HP barfs if you use (( )) in the if statement)
+SCAN=`grep "^$USERID:" /etc/passwd`
+
+if [[ -z "$SCAN" ]]
+then
+  echo "Adding: ${USERID}"
+  echo "  HomeDir: -d ${HOMEDIR}/${USERID}"
+  if [[ ! -z "${OSF}" ]]
+  then
+    echo "  OSF: ${OSF}"
+  fi
+  if [[ ! -z "${GRP}" ]]
+  then
+    echo "  Group: ${GRP}"
+  fi
+  if [[ ! -z "${ID}" ]]
+  then
+    echo "  uid: ${ID}"
+  fi
+  echo "  Shell: -s ${USHELL}"
+  echo "  Comment: -c '${USER},${EMAIL}'"
+  echo ""
+
+  /usr/sbin/useradd ${OSF}${GRP}${ID}-d $HOMEDIR/$USERID -s $USHELL -c "$USER,${EMAIL}" -m $USERID
+
+  `which perl` /tmp/newuser.pw
+
+  echo "Enter $USERID's new password"
+  passwd $USERID
+
+  if [[ $OS = "Linux" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:sysadmin $HOMEDIR/$USERID
+    chmod 700 $HOMEDIR/$USERID/.ssh
+    chage -d 0 $USERID
+    echo "$USERID" >> /etc/cron.deny
+  fi
+  if [[ $OS = "SunOS" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:other $HOMEDIR/$USERID
+    passwd -f $USERID
+    echo "$USERID" >> /etc/cron.d/cron.deny
+  fi
+  if [[ $OS = "HP-UX" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:users $HOMEDIR/$USERID
+    passwd -f $USERID
+    echo "$USERID" >> /var/adm/cron/cron.deny
+  fi
+  if [[ $OS = "OSF1" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh2/hostkeys
+    chown -R $USERID:users $HOMEDIR/$USERID
+    echo "$USERID" >> /var/adm/cron/cron.deny
+  fi
+  if [[ $OS = "FreeBSD" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:users $HOMEDIR/$USERID
+    echo "$USERID" >> /var/cron/deny
+  fi
+
+else
+
+  echo "User already exists. Reset password? [n] "
+  read INPUT
+  if [[ $INPUT = 'y' ]]
+  then
+    `which perl` /tmp/newuser.pw
+
+    echo "Enter $USERID's new password"
+    passwd $USERID
+
+    if [[ $OS = "Linux" ]]
+    then
+      USERGRP=`grep "^$USERID:" /etc/group | cut -f1 -d:`
+      if [[ -z $USERGRP ]]
+      then
+        USERGRP="sysadmin"
+      fi
+      mkdir -p $HOMEDIR/$USERID/.ssh
+      chown -R $USERID:$USERGRP $HOMEDIR/$USERID
+      chmod 700 $HOMEDIR/$USERID/.ssh
+      chage -d 0 $USERID
+    fi
+    if [[ $OS = "SunOS" ]]
+    then
+      mkdir -p $HOMEDIR/$USERID/.ssh
+      chown -R $USERID:other $HOMEDIR/$USERID
+      passwd -f $USERID
+    fi
+    if [[ $OS = "HP-UX" ]]
+    then
+      mkdir -p $HOMEDIR/$USERID/.ssh
+      chown -R $USERID:users $HOMEDIR/$USERID
+      passwd -f $USERID
+    fi
+    if [[ $OS = "OSF1" ]]
+    then
+      mkdir -p $HOMEDIR/$USERID/.ssh2/hostkeys
+      chown -R $USERID:users $HOMEDIR/$USERID
+    fi
+    if [[ $OS = "FreeBSD" ]]
+    then
+      mkdir -p $HOMEDIR/$USERID/.ssh
+      chown -R $USERID:users $HOMEDIR/$USERID
+    fi
+  fi
+
+  if [[ $OS = "Linux" ]]
+  then
+    USERGRP=`grep "^$USERID:" /etc/group | cut -f1 -d:`
+    if [[ -z $USERGRP ]]
+    then
+      USERGRP="sysadmin"
+    fi
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:$USERGRP $HOMEDIR/$USERID
+    chmod 700 $HOMEDIR/$USERID/.ssh
+  fi
+  if [[ $OS = "SunOS" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:other $HOMEDIR/$USERID
+  fi
+  if [[ $OS = "HP-UX" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:users $HOMEDIR/$USERID
+  fi
+  if [[ $OS = "OSF1" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh2/hostkeys
+    chown -R $USERID:users $HOMEDIR/$USERID
+  fi
+  if [[ $OS = "FreeBSD" ]]
+  then
+    mkdir -p $HOMEDIR/$USERID/.ssh
+    chown -R $USERID:users $HOMEDIR/$USERID
+  fi
+    
+  echo "Check groups separately."
+  echo "newuser files not deleted."
+  exit 1
+fi
+
+# In case someone is getting escalated to being a sysadmin. if they're already on the system, 
+# the above bits won't add them to the sysadmin group.
+
+if [[ "$SYSADMIN" = "yes" ]]
+then
+  MEMBER=`grep sysadmin /etc/group | grep $USERID`
+  if [[ "$MEMBER" = "" ]]
+  then
+    /usr/sbin/usermod -G sysadmin $USERID
+    echo "Added to sysadmin group"
+  fi
+fi
+
+# Show user and groups added 
+
+GROUPS=`groups $USERID`
+echo "User added: "$USERID    
+echo "User "$USERID" added to groups: " $GROUPS
+

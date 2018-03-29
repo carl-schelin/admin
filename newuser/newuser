@@ -1,0 +1,124 @@
+#!/bin/ksh
+
+OS=`uname`
+ID=`id | cut -f2 -d= | cut -f1 -d\(`
+FLAG=""
+
+if [[ -f /usr/bin/adinfo && ! "$1" = "-f" ]]
+then
+  echo "Centrify Software installed."
+  /usr/bin/adinfo > /dev/null 2>&1
+  if [[ $? = 0 ]]
+  then
+    echo "Use -f switch to force account creation."
+    echo "/tmp/newuser* scripts not deleted"
+    exit 1
+  fi
+fi
+
+if [[ $ID != 0 ]]
+then
+  echo "You must run this as root"
+  echo "/tmp/newuser* scripts not deleted"
+  exit 1
+fi
+
+for i in `grep -v "^#" /tmp/newuser.users`
+do
+  USERID=`echo $i|cut -f1 -d:`
+  NAME=`echo $i|cut -f2 -d:`
+  EMAIL=`echo $i|cut -f3 -d:`
+  MENTOR=`echo $i|cut -f4 -d:`
+  GROUP=`echo $i|cut -f5 -d:`
+  ID=`echo $i|cut -f6 -d:`
+
+# Field Validation
+  if [ -z $USERID ]
+  then
+    echo "The first field must be set."
+    exit 1
+  fi
+
+  if [ -z $NAME ]
+  then
+    echo "The second field must be set."
+    exit 1
+  fi
+
+  if [ -z $EMAIL ]
+  then
+    echo "The third field must be set."
+    exit 1
+  fi
+
+# Optional fields; set defaults if blank
+
+  if [ "$MENTOR" = "" ]
+  then
+    MENTOR=cschelin 
+  fi
+
+  if [ "$GROUP" = "" ]
+  then
+    GROUP=blank 
+  else
+    ISGROUP=`grep $GROUP /etc/group`
+    if [ -z "$ISGROUP" ]
+    then
+      /usr/sbin/groupadd $GROUP
+      echo "$GROUP created."
+    fi
+  fi
+
+  if [ "$ID" = "" ]
+  then
+    ID=-1 
+  fi
+
+  if [ "$OS" = "HP-UX" ]
+  then
+    grep $USERID /etc/passwd > /dev/null 2>&1
+    if [ $? = 0 ]
+    then
+      /usr/bin/id $USERID
+    fi
+  fi
+  if [ "$OS" = "SunOS" ]
+  then
+    grep $USERID /etc/passwd > /dev/null 2>&1
+    if [ $? = 0 ]
+    then
+      /usr/xpg4/bin/id -p $USERID
+    fi
+  fi
+  if [ "$OS" = "Linux" ]
+  then
+    grep $USERID /etc/passwd > /dev/null 2>&1
+    if [ $? = 0 ]
+    then
+      /usr/bin/id $USERID
+    fi
+  fi
+
+  /tmp/newuser.add $USERID $NAME $EMAIL $MENTOR $GROUP $ID
+
+  VERIFY=`grep "^$USERID:" /etc/passwd`
+  if [[ $VERIFY = "" ]]
+  then
+    FLAG="$FLAG $USERID"
+  fi
+
+done
+
+if [[ $FLAG = "" ]]
+then
+  rm /tmp/newuser.users
+  #rm /tmp/newuser.check
+  rm /tmp/newuser.add
+  rm /tmp/newuser.pw
+  rm /tmp/newuser
+else
+  echo ""
+  echo "ERROR: User(s):$FLAG not added to system"
+fi
+

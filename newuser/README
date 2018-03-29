@@ -1,0 +1,21 @@
+The numbered files are copies of the e-mails sent to the new users. It might be used as a template if you are 
+creating new users.
+
+The project files are lists of servers used for that project. Add as necessary.
+
+Add new users to the "newuser.users" file. Six fields separated by colons.
+
+Fields:
+
+1: The account id. First initial and last name up to 8 characters typically.
+2: The user's first and last name. Initial cap the names and separate the names with an underscore vs a space (Carl_Schelin)
+3: The user's e-mail address. Just the left side of the @. The rest is added in the script
+4: If you are using another account as an example, put this account name here. If you don't fill this field, cschelin is the default.
+5: Group the user can be added to. This can be blank.
+6: The uid. If you wanted to specify a UID that's common across all servers, set the number here (like 5000)
+
+Copy all the newuser files to the server in /tmp. Log in to the server and sudo to root. Run /tmp/newuser. 
+This script runs through the /tmp/newuser.users file, splits up the fields and runs /tmp/newuser.add with 
+the appropriate parameters.
+
+
