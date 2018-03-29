@@ -1,0 +1,101 @@
+#!/opt/sfw/bin/expect
+
+# hostkey
+# Carl Schelin
+# Accepts the host key from any system
+# Systems are generated through the inventory. If a system is in the servers file, it's assumed to be accurate.
+# Rather than having to sudo to unixsvc and sshing to the new system, have this script run against every system,
+# accept the hostkey, and exit.
+# password prompts should be skipped (timed out)
+
+package require Expect
+
+exp_log_user 0
+
+# long timeout because of slow response on a couple of systems
+set timeout 60
+
+set env(TERM) dumb
+
+array set OPTS {
+  host     ""
+  user     "unixsvc"
+  opasswd  ""
+  npasswd  ""
+  passwd   "passwd"
+  prompt   "(% |# |> |\\$ |:)$"
+  verbose  "on"
+  debug    "on"
+}
+
+proc usage {code} {
+  global OPTS
+  puts [expr {$code ? "stderr" : "stdout"}] \
+    "$::argv0 -user username -host hostname ?options?
+    -help            (print out this message)"
+  exit $code
+}
+
+proc parseargs {argc argv} {
+  global OPTS
+  foreach {key val} $argv {
+    switch -exact -- $key {
+      "-user"    { set OPTS(user)    $val }
+      "-host"    { set OPTS(host)    $val }
+      "-help"    { usage 0 }
+    }
+  }
+}
+parseargs $argc $argv
+
+if { $OPTS(host) == "" || $OPTS(user) == "" } {
+  usage 1
+}
+
+proc timedout {{msg {none}}} {
+  send_user "Timed out (reason: $msg)\n"
+  if {[info exists ::expect_out]} {
+    parray ::expect_out
+  }
+  exit 1
+}
+
+set pid [spawn ssh $OPTS(user)@$OPTS(host)]
+
+set id $spawn_id
+
+# RSA key prompt:
+#The authenticity of host 'bldintg02 (9.17.182.195)' can't be established.
+#RSA key fingerprint is [key]
+#Are you sure you want to continue connecting (yes/no)? yes
+#Warning: Permanently added 'bldintg02,9.17.182.195' (RSA) to the list of known hosts.
+
+set logged_in 0
+while {!$logged_in} {
+  send_user "waiting...\n"
+  expect timeout {
+    timedout "Timed out sshing to $OPTS(host)..."
+    break
+  } eof {
+    timedout "Unable to ssh to $OPTS(host)..."
+    break
+  } "Are you sure you want to continue connecting (yes/no)?" {
+    exp_send -- "yes\r"
+    send_user "Accepted host key for $OPTS(host)...\n"
+  } "password:" {
+    send_user "Exiting $OPTS(host) at password prompt...\n"
+    break
+  } "Password:" {
+    send_user "Exiting $OPTS(host) at password prompt...\n"
+    break
+  } -re $OPTS(prompt) {
+    send_user "Exiting $OPTS(host) at login prompt...\n"
+    exp_send -- "exit\r"
+    set logged_in 1
+  }
+}
+
+exp_close -i $id
+
+exp_wait -i $id
+

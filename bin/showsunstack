@@ -1,0 +1,383 @@
+#!/bin/ksh
+
+# showstack
+#    prints the web page report
+
+ADMIN=/usr/local/admin
+BGCOLOR="CCCCCC"
+PHP=/usr/local/httpd/htsecure/reports/sunstack.php
+
+echo "<?php" > $PHP
+echo "  include('settings.php'); >> $PHP
+echo "  include($Sitepath . '/login/check.php'); >> $PHP
+echo "  check_login('3');" >> $PHP
+echo "?>" >> $PHP
+echo "<html>" >> $PHP
+echo "<head>" >> $PHP
+echo "<title>SunOS</title>" >> $PHP
+echo "</head>" >> $PHP
+echo "<body>" >> $PHP
+echo "" >> $PHP
+echo "<h3 align=center>Solaris Settings</h3>" >> $PHP
+echo "" >> $PHP
+echo "<table>" >> $PHP
+echo "<tr>" >> $PHP
+echo "  <th>&nbsp;</th>" >> $PHP
+echo "  <th colspan=20><font size=\"-2\">Recommended Security Settings</font></th>" >> $PHP
+echo "  <th colspan=7><font size=\"-2\">Recommended Performance Settings</font></th>" >> $PHP
+echo "</tr>" >> $PHP
+echo "<tr>" >> $PHP
+echo "  <th><font bgcolor=$BGCOLOR size=\"-2\">Server</font></th>" >> $PHP
+echo "  <th title=\"Decrease the ARP cache cleanup interval\"><font bgcolor=$BGCOLOR size=\"-2\">arp cleanup interval</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP broadcast echo activity\"><font bgcolor=$BGCOLOR size=\"-2\">ip response to echo broadcast</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP broadcast echo activity\"><font bgcolor=$BGCOLOR size=\"-2\">ip6 respond to echo broadcast</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP broadcast echo activity\"><font bgcolor=$BGCOLOR size=\"-2\">ip forward directed broadcasts</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">ip ignore redirect</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">ip6 ignore redirect</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">ip send redirects</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">ip6 send redirects</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP broadcast probes\"><font bgcolor=$BGCOLOR size=\"-2\">ip respond to address mask broadcast</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP broadcast probes\"><font bgcolor=$BGCOLOR size=\"-2\">ip respond to timestamp broadcast</font></th>" >> $PHP
+echo "  <th title=\"Disable IP source routing\"><font bgcolor=$BGCOLOR size=\"-2\">ip forward src routed</font></th>" >> $PHP
+echo "  <th title=\"Disable IP source routing\"><font bgcolor=$BGCOLOR size=\"-2\">ip6 forward src routed</font></th>" >> $PHP
+echo "  <th title=\"Enforce strict multi-homing for non-forwarding multi-homed systems\"><font bgcolor=$BGCOLOR size=\"-2\">ip strict dst multihoming</font></th>" >> $PHP
+echo "  <th title=\"Enforce strict multi-homing for non-forwarding multi-homed systems\"><font bgcolor=$BGCOLOR size=\"-2\">ip6 strict dst multihoming</font></th>" >> $PHP
+echo "  <th title=\"Make host resistant to SYN Flood attacks\"><font bgcolor=$BGCOLOR size=\"-2\">tcp conn req max q</font></th>" >> $PHP
+echo "  <th title=\"Make host resistant to SYN Flood attacks\"><font bgcolor=$BGCOLOR size=\"-2\">tcp conn req max q0</font></th>" >> $PHP
+echo "  <th title=\"Make host resistant to SYN Flood attacks\"><font bgcolor=$BGCOLOR size=\"-2\">tcp time wait interval</font></th>" >> $PHP
+echo "  <th title=\"Defend against TCP connection hijacking\"><font bgcolor=$BGCOLOR size=\"-2\">tcp strong iss</font></th>" >> $PHP
+echo "  <th title=\"Increate TCP send window size to at least 32k\"><font bgcolor=$BGCOLOR size=\"-2\">tcp xmit hiwat</font></th>" >> $PHP
+echo "  <th title=\"Increate TCP receive window size to at least 32k\"><font bgcolor=$BGCOLOR size=\"-2\">tcp recv hiwat</font></th>" >> $PHP
+echo "  <th title=\"Enable Window Scaling\"><font bgcolor=$BGCOLOR size=\"-2\">tcp wscale always</font></th>" >> $PHP
+echo "  <th title=\"Enable Window Scaling\"><font bgcolor=$BGCOLOR size=\"-2\">tcp tstamp if wscale</font></th>" >> $PHP
+echo "  <th title=\"Enable RFC2018 SACK\"><font bgcolor=$BGCOLOR size=\"-2\">tcp sack permitted</font></th>" >> $PHP
+echo "  <th title=\"Set the maximum TCP buffer size\"><font bgcolor=$BGCOLOR size=\"-2\">tcp max buf</font></th>" >> $PHP
+echo "  <th title=\"Set the maximum congestion window\"><font bgcolor=$BGCOLOR size=\"-2\">tcp cwnd max</font></th>" >> $PHP
+echo "  <th title=\"Set the send buffer size\"><font bgcolor=$BGCOLOR size=\"-2\">tcp xmit hiwat</font></th>" >> $PHP
+echo "  <th title=\"Set the receive buffer size\"><font bgcolor=$BGCOLOR size=\"-2\">tcp recv hiwat</font></th>" >> $PHP
+echo "</tr>" >> $PHP
+
+for i in `grep -v "^#" $ADMIN/etc/servers | grep SunOS`
+do
+  SERVER=`echo $i | cut -f1 -d:`
+
+  if [[ $BGCOLOR = "EEEEEE" ]]
+  then
+    BGCOLOR="CCCCCC"
+  else 
+    BGCOLOR="EEEEEE"
+  fi
+
+  if [[ ! -f $ADMIN/servers/$SERVER/chkstack.output ]]
+  then
+    echo "<tr bgcolor=$BGCOLOR>" >> $PHP
+    echo "  <td><font bgcolor=$BGCOLOR size="-2" color=red>$SERVER</font></td>" >> $PHP
+  else
+    echo "<tr bgcolor=$BGCOLOR>" >> $PHP
+    echo "  <td><font bgcolor=$BGCOLOR size="-2" color=black>$SERVER</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="60000"'
+    VAL1=`/bin/grep "^arp_cleanup_interval " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL1" = "" ]]
+    then
+      PRE="green"
+      VAL1="60000"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL1</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL2=`/bin/grep "^ip_response_to_echo_broadcast " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL2" = "" ]]
+    then
+      PRE="green"
+      VAL2="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL2</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL3=`/bin/grep "^ip6_respond_to_echo_broadcast " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL3" = "" ]]
+    then
+      PRE="green"
+      VAL3="0"
+    fi
+    if [[ $VAL3 = module ]]
+    then
+      VAL3="N/A"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL3</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL4=`/bin/grep "^ip_forward_directed_broadcasts " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL4" = "" ]]
+    then
+      PRE="green"
+      VAL4="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL4</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL5=`/bin/grep "^ip_ignore_redirect " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL5" = "" ]]
+    then
+      PRE="green"
+      VAL5="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL5</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL6=`/bin/grep "^ip6_ignore_redirect " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL6" = "" ]]
+    then
+      PRE="green"
+      VAL6="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL6</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL7=`/bin/grep "^ip_send_redirects " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL7" = "" ]]
+    then
+      PRE="green"
+      VAL7="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL7</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL8=`/bin/grep "^ip6_send_redirects " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL8" = "" ]]
+    then
+      PRE="green"
+      VAL8="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL8</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL9=`/bin/grep "^ip_respond_to_address_mask_broadcast " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL9" = "" ]]
+    then
+      PRE="green"
+      VAL9="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL9</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL10=`/bin/grep "^ip_respond_to_timestamp_broadcast " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL10" = "" ]]
+    then
+      PRE="green"
+      VAL10="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL10</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL11=`/bin/grep "^ip_forward_src_routed " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL11" = "" ]]
+    then
+      PRE="green"
+      VAL11="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL11</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL12=`/bin/grep "^ip6_forward_src_routed " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL12" = "" ]]
+    then
+      PRE="green"
+      VAL12="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL12</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL13=`/bin/grep "^ip_strict_dst_multihoming " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL13" = "" ]]
+    then
+      PRE="green"
+      VAL13="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL13</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL14=`/bin/grep "^ip6_strict_dst_multihoming " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL14" = "" ]]
+    then
+      PRE="green"
+      VAL14="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL14</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1024"'
+    VAL15=`/bin/grep "^tcp_conn_req_max_q " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL15" = "" ]]
+    then
+      PRE="green"
+      VAL15="1024"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL15</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="4096"'
+    VAL16=`/bin/grep "^tcp_conn_req_max_q0 " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL16" = "" ]]
+    then
+      PRE="green"
+      VAL16="4096"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL16</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="60000"'
+    VAL17=`/bin/grep "^tcp_time_wait_interval " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL17" = "" ]]
+    then
+      PRE="green"
+      VAL17="60000"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL17</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="2"'
+    VAL18=`/bin/grep "^tcp_strong_iss " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL18" = "" ]]
+    then
+      PRE="green"
+      VAL18="2"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL18</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="32768"'
+    VAL19=`/bin/grep "^tcp_xmit_hiwat " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL19" = "" ]]
+    then
+      PRE="green"
+      VAL19="32768"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL19</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="32768"'
+    VAL20=`/bin/grep "^tcp_recv_hiwat " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL20" = "" ]]
+    then
+      PRE="green"
+      VAL20="32768"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL20</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL21=`/bin/grep "^tcp_wscale_always " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL21" = "" ]]
+    then
+      PRE="green"
+      VAL21="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL21</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL22=`/bin/grep "^tcp_tstamp_if_wscale " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL22" = "" ]]
+    then
+      PRE="green"
+      VAL22="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL22</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="2"'
+    VAL23=`/bin/grep "^tcp_sack_permitted " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL23" = "" ]]
+    then
+      PRE="green"
+      VAL23="2"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL23</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="4000000"'
+    VAL24=`/bin/grep "^tcp_max_buf " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL24" = "" ]]
+    then
+      PRE="green"
+      VAL24="4000000"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL24</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="4000000"'
+    VAL25=`/bin/grep "^tcp_cwnd_max " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL25" = "" ]]
+    then
+      PRE="green"
+      VAL25="4000000"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL25</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="4000000"'
+    VAL26=`/bin/grep "^tcp_xmit_hiwat " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL26" = "" ]]
+    then
+      PRE="green"
+      VAL26="4000000"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL26</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="4000000"'
+    VAL27=`/bin/grep "^tcp_recv_hiwat " $ADMIN/servers/$SERVER/chkstack.output | /bin/awk '{print $NF}'`
+    if [[ "$VAL27" = "" ]]
+    then
+      PRE="green"
+      VAL27="4000000"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL27</font></td>" >> $PHP
+  fi
+
+  echo "</tr>" >> $PHP
+
+done
+
+echo "</table>" >> $PHP
+echo "" >> $PHP
+
+echo "<p><b>Webapp Server Recommendations:</b></p>" >> $PHP
+
+echo "<p>For better TCP (transmission control protocol) socket performance, set the tcp_time_wait_interval parameter as follows:</p>" >> $PHP
+
+echo "<pre>ndd -set /dev/tcp tcp_time_wait_interval 60,000</pre>" >> $PHP
+
+echo "<p>This parameter determines the time interval that a TCP socket is kept alive after issuing a close call. The default value of this parameter on Solaris " >> $PHP
+echo "is four minutes (240,000). When a large number of clients connect for a short amount of time, holding these socket resources can have a significant negative impact " >> $PHP
+echo "on performance. Setting this parameter to a value of 60000 (60 seconds) has shown a significant throughput enhancement when running benchmark JSP tests on " >> $PHP
+echo "Solaris. You might want to reduce this setting further if the server gets backed up with a queue of half-opened connections.</p>" >> $PHP
+
+echo "<p><b>tcp_fin_wait_2_flush_interval</b></p>" >> $PHP
+
+echo "<p>Specifies the timer interval prohibiting a connection in the FIN_WAIT_2 state to remain in that state. When high connection rates occur, a large backlog " >> $PHP
+echo "of TCP/IP connections accumulates and can slow server performance. The server can stall during peak periods. If the server stalls, using the netstat command " >> $PHP
+echo "shows that many of the sockets opened to the HTTP server are in the CLOSE_WAIT or FIN_WAIT_2 state. Visible delays can occur for up to four minutes, during " >> $PHP
+echo "which time the server does not send any responses, but CPU utilization stays high, with all of the activity in system processes. Default is 675,000 ms, " >> $PHP
+echo "recommended value is 67,500 ms." >> $PHP
+
+echo "<pre>ndd -set /dev/tcp tcp_fin_wait_2_flush_interval 67500</pre>" >> $PHP
+
+echo "</body>" >> $PHP
+echo "</html>" >> $PHP

@@ -1,0 +1,203 @@
+#!/usr/bin/perl
+
+open (OUTPUT, ">/usr/local/httpd/htsecure/reports/users.php");
+
+print OUTPUT "<?php\n";
+print OUTPUT "  include('../inventory/login/check.php');\n";
+print OUTPUT "  check_login('3');\n";
+print OUTPUT "?>\n";
+print OUTPUT "<html>\n";
+print OUTPUT "<head>\n";
+print OUTPUT "<title>User List</title>\n";
+print OUTPUT "<h3 align=center>User List</h3>\n";
+print OUTPUT "</head>\n";
+print OUTPUT "<body>\n";
+print OUTPUT "\n";
+print OUTPUT "Process: The list compares the GECOS field of each servers /etc/passwd file against the list of e-mail addresses \n";
+print OUTPUT "provided by the Windows admins. If the e-mail address doesn't match any address in the list, the account is \n";
+print OUTPUT "identified in red. \n";
+print OUTPUT "\n";
+print OUTPUT "There are three occasions where this could occur.\n";
+print OUTPUT "\n";
+print OUTPUT "<ul>\n";
+print OUTPUT "  <li>When a user quits and is subsequently deleted from the mail server.</li>\n";
+print OUTPUT "  <li>When a new employee has been added to a server.</li>\n";
+print OUTPUT "  <li>When we manage a new system, either via new deployment or taking responsibility for an existing server.</li>\n";
+print OUTPUT "</ul>\n";
+print OUTPUT "\n";
+print OUTPUT "Currently the mailing address list is not automatically retrieved. It must be manually retrieved and processed. \n";
+print OUTPUT "Processing consists of deleting all spaces, removing all blank lines, and converting all text to lower case.\n";
+print OUTPUT "\n";
+print OUTPUT "<table>\n";
+print OUTPUT "<tr>\n";
+print OUTPUT "  <th>Server/User</th>\n";
+print OUTPUT "  <th>/etc/passwd Comment Field</th>\n";
+print OUTPUT "  <th>Last Time The Password Was Changed</th>\n";
+print OUTPUT "  <th>Last Time The User Logged in</th>\n";
+print OUTPUT "  <th>Status</th>\n";
+print OUTPUT "</tr>\n";
+print OUTPUT "\n";
+
+$HOME="/usr/local/admin";
+$NDAYS=int time / (3600 * 24);
+
+@users = `cat $HOME/servers/check.users`;
+#@users = `cat $HOME/check/checked.output.sorted`;
+@email = `cat $HOME/etc/intrado.email`;
+@exclude = `cat $HOME/etc/users.exclude`;
+
+$server = "";
+
+for ($i = 0; $i <= $#users; $i++) {
+  $color="green";
+  chomp $users[$i];
+  (@list) = split(":", $users[$i]);
+
+  if ($server ne $list[0]) {
+    $server = $list[0];
+    print OUTPUT "<tr>\n";
+    print OUTPUT "  <th colspan=3>$server</th>\n";
+    print OUTPUT "</tr>\n";
+  }
+
+  $employee = 0;
+  for ($j = 0; $j <= $#email; $j++) {
+    chomp $email[$j];
+    (@mail) = split(",", $list[2]);
+    if ($mail[1] ne "" && $email[$j] eq $mail[1] || $mail[1] eq "centrify") {
+      $employee = 1;
+    }
+  }
+
+  if ($list[3] > 0) {
+    $days = $NDAYS - $list[3];
+  } else {
+    $days = 0;
+  }
+
+  if (! $employee ) {
+    $color = "black";
+    if ( $list[5] eq "active" ) {
+      $color = "red";
+    }
+  }
+
+  for ($j = 0; $j <= $#exclude; $j++) {
+    chomp $exclude[$j];
+    if ($exclude[$j] eq $list[1]) {
+      $color = "yellow";
+    }
+  }
+
+  if ($color eq "red") {
+
+# Have to put in substitutes for servers that are different on host vs the name we know them by.
+#    svrname[$server] = $server;
+#    svrname['den-ora'] = "denora";
+#    svrname['dal-ora'] = "dalora";
+#    svrname['cofmcc1'] = "incofmcc1";
+#    svrname['cofmcc2'] = "incofmcc2";
+#    svrname['cofmcc3'] = "incofmcc3";
+
+#    $list[0] = "denora" if 
+    if ($list[0] eq "den-ora") {
+      $list[0] = "denora"; 
+    }
+    if ($list[0] eq "dal-ora") {
+      $list[0] = "dalora"; 
+    }
+    if ($list[0] eq "cofmcc1") {
+      $list[0] = "incofmc1"; 
+    }
+    if ($list[0] eq "cofmcc2") {
+      $list[0] = "incofmc2"; 
+    }
+    if ($list[0] eq "cafmcc1") {
+      $list[0] = "pscafmc1"; 
+    }
+    if ($list[0] eq "cafmcc2") {
+      $list[0] = "pscafmc2"; 
+    }
+    if ($list[0] eq "flfmcc1") {
+      $list[0] = "inflfmc1"; 
+    }
+    if ($list[0] eq "flfmcc2") {
+      $list[0] = "inflfmc2"; 
+    }
+    if ($list[0] eq "inilfmc1") {
+      $list[0] = "ilfmcc1"; 
+    }
+    if ($list[0] eq "inilfmc2") {
+      $list[0] = "ilfmcc2"; 
+    }
+    if ($list[0] eq "tofmcc1") {
+      $list[0] = "pstofmc1"; 
+    }
+    if ($list[0] eq "tofmcc2") {
+      $list[0] = "pstofmc2"; 
+    }
+    if ($list[0] eq "coesg1") {
+      $list[0] = "incoesg1"; 
+    }
+    if ($list[0] eq "coesg2") {
+      $list[0] = "incoesg2"; 
+    }
+    if ($list[0] eq "flesg1") {
+      $list[0] = "inflesg1"; 
+    }
+    if ($list[0] eq "flesg2") {
+      $list[0] = "inflesg2"; 
+    }
+    if ($list[0] eq "incoag10") {
+      $list[0] = "incoag13"; 
+    }
+    if ($list[0] eq "incoag20") {
+      $list[0] = "incoag23"; 
+    }
+    if ($list[0] eq "incoga10") {
+      $list[0] = "incoga13"; 
+    }
+    if ($list[0] eq "incoga20") {
+      $list[0] = "incoga23"; 
+    }
+    if ($list[0] eq "coolcadctxb0") {
+      $list[0] = "coolcadctxb1"; 
+    }
+    if ($list[0] eq "dthvcadctxb0") {
+      $list[0] = "dthvcadctxb1"; 
+    }
+    if ($list[0] eq "enwdcodctxb0") {
+      $list[0] = "enwdcodctxb1"; 
+    }
+    if ($list[0] eq "miamfldctxb0") {
+      $list[0] = "miamfldctxb1"; 
+    }
+    if ($list[0] eq "inveri01-gig0") {
+      $list[0] = "inveri01"; 
+    }
+
+    if (open (ERRRO, ">>$HOME/servers/$list[0]/config.status")) {
+      print ERRRO "ERROR: $list[1] is active and not in Active Directory.\n";
+      close ERRRO;
+    }
+
+    if (open (ERRRO, ">>$HOME/servers/$list[0]/sudoers.status")) {
+      print ERRRO "ERROR: $list[1] is active and not in Active Directory.\n";
+      close ERRRO;
+    }
+
+    print OUTPUT "<tr>\n";
+    print OUTPUT "  <td><font color=$color>$list[1]</font></td>\n";
+    print OUTPUT "  <td><font color=$color>$list[2]</font></td>\n";
+    print OUTPUT "  <td><font color=$color>$days</font></td>\n";
+    print OUTPUT "  <td><font color=$color>$list[4]</font></td>\n";
+    print OUTPUT "  <td><font color=$color>$list[5]</font></td>\n";
+    print OUTPUT "</tr>\n";
+  }
+}
+
+print OUTPUT "</table>\n";
+print OUTPUT "\n";
+print OUTPUT "</body>\n";
+print OUTPUT "</html>\n";
+

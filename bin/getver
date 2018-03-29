@@ -1,0 +1,149 @@
+#!/bin/ksh
+
+# This script isn't run automatically. You run it when you need to update the 
+# inventory database with OS versions. You'll need to log in to the mysql 
+# server and use the inventory database, then just paste the lines into 
+# the screen. Generally I'll paste only a screen of lines in at a time due 
+# to the slowness of the server overwhelming the input buffer of mysql.
+
+ADMIN=/usr/local/admin
+
+for i in `grep -v "^#" $ADMIN/etc/servers`
+do
+  SERVER=`echo $i | cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+  ssh $SERVER "uname -r" > $ADMIN/servers/uname-r
+  if [[ $OS = "Linux" ]]
+  then
+    scp $SERVER:/etc/redhat-release $ADMIN/servers/$SERVER
+    if [[ -f $ADMIN/servers/$SERVER/redhat-release ]]
+    then
+      VER=`tail -1 $ADMIN/servers/$SERVER/redhat-release`
+      UPDATE=`echo $VER | cut -f2 -d\( | cut -f1 -d\)`
+      REL=`echo $VER | awk '{print $7}'`
+      COUNT=`wc -l $ADMIN/servers/$SERVER/redhat-release | awk '{print $1}'`
+      if [[ $COUNT -eq 2 ]]
+      then
+        VERSION="Oracle ES $REL ($UPDATE)"
+      else
+        VERSION="Red Hat ES $REL ($UPDATE)"
+      fi
+    else 
+      echo $SERVER
+      VER=`cat $ADMIN/servers/$SERVER/uname-r`
+      VERSION="Red Hat $VER"
+    fi
+  fi
+
+  if [[ $OS = "SunOS" ]]
+  then
+    scp $SERVER:/etc/release $ADMIN/servers/$SERVER
+    if [[ -f $ADMIN/servers/$SERVER/release ]]
+    then
+      VER=`head -1 $ADMIN/servers/$SERVER/release | awk '{print $1,$2,$3}'`
+      VERSION=$VER
+    else 
+      VER=`cat $ADMIN/servers/$SERVER/uname-r | cut -f2 -d.`
+      VERSION="Solaris $VER"
+    fi
+  fi
+
+  if [[ $OS = "FreeBSD" ]]
+  then
+    if [[ -f $ADMIN/servers/$SERVER/release ]]
+    then
+      VER=`cat $ADMIN/servers/$SERVER/release`
+      VERSION=$VER
+    else 
+      VER=`cat $ADMIN/servers/$SERVER/uname-r | cut -f1 -d-`
+      VERSION="FreeBSD $VER"
+    fi
+  fi
+
+  if [[ $OS = "OSF1" ]]
+  then
+    if [[ -f $ADMIN/servers/$SERVER/release ]]
+    then
+      VER=`cat $ADMIN/servers/$SERVER/release`
+      VERSION=$VER
+    else 
+      VER=`cat $ADMIN/servers/$SERVER/uname-r`
+      VERSION="Tru64 $VER"
+    fi
+  fi
+
+  if [[ $OS = "HP-UX" ]]
+  then
+    if [[ -f $ADMIN/servers/$SERVER/release ]]
+    then
+      VER=`cat $ADMIN/servers/$SERVER/release`
+      VERSION=$VER
+    else 
+      VER=`cat $ADMIN/servers/$SERVER/uname-r`
+      VERSION="HP-UX $VER"
+    fi
+  fi
+
+  if [[ $SERVER = "bart" ]]
+  then
+    SERVER="$SERVER/simpson"
+  fi
+  if [[ $SERVER = "cowh01" ]]
+  then
+    SERVER="$SERVER/ics0"
+  fi
+  if [[ $SERVER = "cowh02" ]]
+  then
+    SERVER="$SERVER/ics0"
+  fi
+  if [[ $SERVER = "homer" ]]
+  then
+    SERVER="$SERVER/simpson"
+  fi
+  if [[ $SERVER = "incoce03" ]]
+  then
+    SERVER="$SERVER/incoce00"
+  fi
+  if [[ $SERVER = "incoce04" ]]
+  then
+    SERVER="$SERVER/incoce00"
+  fi
+  if [[ $SERVER = "lldb01" ]]
+  then
+    SERVER="$SERVER/nrlldb0"
+  fi
+  if [[ $SERVER = "lldb02" ]]
+  then
+    SERVER="$SERVER/nrlldb0"
+  fi
+  if [[ $SERVER = "lmpc0a" ]]
+  then
+    SERVER="$SERVER/lmpc0"
+  fi
+  if [[ $SERVER = "lmpc0b" ]]
+  then
+    SERVER="$SERVER/lmpc0"
+  fi
+  if [[ $SERVER = "mpc01" ]]
+  then
+    SERVER="$SERVER/impc0"
+  fi
+  if [[ $SERVER = "mpc02" ]]
+  then
+    SERVER="$SERVER/impc0"
+  fi
+  if [[ $SERVER = "mpc11" ]]
+  then
+    SERVER="$SERVER/impc1"
+  fi
+  if [[ $SERVER = "mpc12" ]]
+  then
+    SERVER="$SERVER/impc1"
+  fi
+
+
+
+  echo "update inventory set inv_os=\"$VERSION\" where inv_name = \"$SERVER\";"
+done
+

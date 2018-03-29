@@ -1,0 +1,25 @@
+#!/bin/ksh
+
+ADMIN=/usr/local/admin
+
+COMPLETE=`/usr/bin/grep -vc "^ERROR" /var/tmp/chkservers.output`
+TOTAL=`/usr/bin/grep -vc "^#" $ADMIN/etc/servers`
+RESULT=$(($TOTAL - $COMPLETE))
+
+if [[ $RESULT -gt 0 ]]
+then
+  echo "The following servers were unsuccessfully contacted:"
+  for i in `/usr/bin/grep -v "^#" $ADMIN/etc/servers | /usr/bin/cut -f1 -d:`
+  do
+    /usr/bin/grep "^${i} " /var/tmp/chkservers.output > /dev/null 2>&1
+    if [[ $? = 1 ]]
+    then
+      echo $i
+    fi
+  done
+else
+  echo "All servers were successfully contacted"
+fi
+
+exit 0
+

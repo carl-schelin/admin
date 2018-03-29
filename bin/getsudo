@@ -1,0 +1,136 @@
+#!/bin/ksh
+
+# getsudo - Retrieve the temp root users
+# Owner: Carl Schelin
+# 8/15/11 - change retrieval directory to /opt/intrado and update timeout to 180 seconds
+
+PROGNAME="getsudo"
+LOC=/usr/local/admin
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=180
+
+# Content here: scp the config file from here
+
+  CONTENT="chksudo"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  /usr/bin/scp $SERVER:/opt/intrado/etc/$CONTENT.output $SVRPATH/$CONTENT.output &
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+# if the file does not exist after this, note it in the config file as a script that's not installed yet.
+
+  if [ ! -f $SVRPATH/$CONTENT.output ]
+  then
+    echo "WARNING: chksudo script is not installed" >> $SVRPATH/config.status
+    echo "WARNING: chksudo script is not installed" >> $SVRPATH/morning.status
+  fi
+
+# if no one is in the TMPROOT variable, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# now report anyone that's not expected to be in TMPROOT to be reviewed
+
+# if the output file exists
+  if [[ -f $SVRPATH/$CONTENT.output ]]
+  then
+# and then if there's someone in the TMPROOT sudoers
+    if [[ -s $SVRPATH/$CONTENT.output ]]
+    then
+      if [[ -f $SVRPATH/$CONTENT.good ]]
+      then
+# and if the good file contains people
+        if [[ -s $SVRPATH/$CONTENT.good ]]
+        then
+          LIST=`cat $SVRPATH/$CONTENT.good`
+          OUTPUT=`sed -e "s/$LIST//g" $SVRPATH/$CONTENT.output | sed -e "s/,//g" | sed -e "s/^ //g"`
+# otherwise just process the output file
+        else
+          OUTPUT=`sed -e "s/,//g" $SVRPATH/$CONTENT.output | sed -e "s/^ //g"`
+        fi
+
+# ok, now we check the output for data
+        if [[ "$OUTPUT" = "" ]]
+        then
+          touch $SVRPATH/$CONTENT.diff
+        else
+          echo $OUTPUT > $SVRPATH/$CONTENT.diff
+        fi
+
+        if [[ -s $SVRPATH/$CONTENT.diff ]]                                  
+        then
+          CHKSUDO=`cat $SVRPATH/$CONTENT.diff`
+          echo "WARNING: TMPROOT contains $CHKSUDO. Please verify and remove if not needed." >> $SVRPATH/config.status
+          echo "WARNING: TMPROOT contains $CHKSUDO. Please verify and remove if not needed." >> $SVRPATH/morning.status
+        fi
+      else
+        echo "WARNING: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/config.status
+        echo "WARNING: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/morning.status
+      fi
+    fi
+  fi
+
+done
+
+exit 0
+

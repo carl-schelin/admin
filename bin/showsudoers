@@ -1,0 +1,275 @@
+#!/usr/bin/perl
+
+# comment this out for the morning report run
+#$arg = "web";
+
+$SCRIPT="sudoers.php";
+$TITLE="Sudoers Review";
+
+print "<?php\n";
+print "# Script: $SCRIPT\n";
+print "# Owner: Carl Schelin\n";
+print "# Coding Standard 3.0 Applied\n";
+print "# See: https://incowk01/makers/index.php/Coding_Standards\n";
+print "# Description:\n";
+print "\n";
+print "  include('settings.php');\n";
+print "  include(\$Sitepath . '/guest.php');\n";
+print "\n";
+print "  \$package = \"$SCRIPT\";\n";
+print "\n";
+print "  logaccess(\$formVars['username'], \$package, \"Accessing the script.\");\n";
+print "\n";
+print "?>\n";
+print "<!DOCTYPE HTML>\n";
+print "<html>\n";
+print "<head>\n";
+print "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">\n";
+print "<title>$TITLE</title>\n";
+print "\n";
+print "<style type=\"text/css\" title=\"currentStyle\" media=\"screen\">\n";
+print "<?php include(\$Sitepath . \"/mobile.php\"); ?>\n";
+print "</style>\n";
+print "\n";
+print "<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/jquery.js\"></script>\n";
+print "<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>\n";
+print "<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">\n";
+print "<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>\n";
+print "\n";
+print "</head>\n";
+print "<body class=\"ui-widget-content\">\n";
+print "\n";
+print "<?php include(\$Sitepath . '/topmenu.start.php'); ?>\n";
+print "<?php include(\$Sitepath . '/topmenu.end.php'); ?>\n";
+print "\n";
+print "<div class=\"main\">\n";
+print "\n";
+print "<div class=\"main-help ui-widget-content\">\n";
+print "<p>Process: The list compares the GECOS field of each servers /etc/passwd file against the list of e-mail addresses \n";
+print "provided by the Windows admins. If the e-mail address doesn't match any address in the list, the account is \n";
+print "identified in red.</p>\n";
+print "\n";
+print "<p>There are three occasions where this could occur.</p>\n";
+print "\n";
+print "<ul>\n";
+print "  <li>When a user quits and is subsequently deleted from the mail server.</li>\n";
+print "  <li>When a new employee has been added to a server.</li>\n";
+print "  <li>When we manage a new system, either via new deployment or taking responsibility for an existing server.</li>\n";
+print "</ul>\n";
+print "\n";
+print "<ul>\n";
+print "  <li><span class=\"ui-state-error\">Highlight</span> - GECOS is wrong or missing, not in intrado.email listing (implies user account is not locked).</li>\n";
+print "  <li><span class=\"ui-state-highlight\">Highlight</span> - Service account located in users.exclude listing.</li>\n";
+print "</ul>\n";
+print "\n";
+print "</div>\n";
+print "\n";
+
+print "<table class=\"ui-styled-table\">\n";
+print "<tr>\n";
+print "  <th class=\"ui-state-default\">Server/User</th>\n";
+print "  <th class=\"ui-state-default\">/etc/passwd Comment Field</th>\n";
+print "</tr>\n";
+
+
+$HOME="/usr/local/admin";
+$NDAYS=int time / (3600 * 24);
+($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
+$comparedate = sprintf("%4d%02d%02d", ($year + 1900), ($mon + 1), $mday);
+# updated to ensure a YYYYMMDD output padded with zeros
+
+@users = `cat $HOME/servers/check.sudoers`;
+@email = `cat $HOME/etc/intrado.email`;
+@exclude = `cat $HOME/etc/sudoers.exclude`;
+@chksudo = `cat $HOME/etc/chksudo.dat`;
+
+# clear it so it doesn't check it each time
+for ($i = 0; $i <= $#chksudo; $i++) {
+  chomp $chksudo[$i];
+}
+
+$server = "";
+
+for ($i = 0; $i <= $#users; $i++) {
+  $color="ui-widget-content";
+  chomp $users[$i];
+  (@list) = split(":", $users[$i]);
+#   0       1         2                                       3   4
+#2dallas:hpietras:heather pietras,heather.pietras@intrado.com:yes:active
+
+  if ($server ne $list[0]) {
+    $server = $list[0];
+    print "<tr>\n";
+    print "  <th class=\"ui-state-default\" colspan=\"3\">$server</th>\n";
+    print "</tr>\n";
+  }
+
+# check e-mail address from GECOS field and flag it if it's not in the intrado.email file
+#
+# Move the setting of @mail outside the loop and only loop through email if $mail[1] is not
+# blank, equal to centrify or does not contain an @ symbol
+  $employee = 0;
+  (@mail) = split(",", $list[2]);
+  if($mail[1] ne "") {
+    if($mail[1] eq "centrify") { # if user is in centrify, flag as employee
+      $employee = 1;
+    } elsif($mail[1] =~ /\@/) {
+      for ($j = 0; $j <= $#email; $j++) {
+        chomp $email[$j];
+        if ($email[$j] eq $mail[1]) {
+          $employee = 1;
+          # Once we have found the record, skip to the end
+          last;
+        }
+      }
+    }
+  }
+
+  if (! $employee ) {
+    $color = "ui-state-error";
+  }
+
+# name is in the users.exclude file
+  for ($j = 0; $j <= $#exclude; $j++) {
+    chomp $exclude[$j];
+    if ($exclude[$j] eq $list[1]) {
+      $color = "ui-state-highlight";
+    }
+  }
+
+#  if ($color eq "ui-state-error") {
+
+    $svrname = $list[0];
+# Have to put in substitutes for servers that are different on host vs the name we know them by.
+    $svrname = "coolcadccba01"	if ($list[0] eq "coolcadccba10");
+    $svrname = "coolcadccba02"	if ($list[0] eq "coolcadccba20");
+    $svrname = "coolcadctxb1"	if ($list[0] eq "coolcadctxb0");
+    $svrname = "denora"		if ($list[0] eq "den-ora");
+    $svrname = "dalora"		if ($list[0] eq "dal-ora");
+    $svrname = "dthvcadccba01"	if ($list[0] eq "dthvcadccba10");
+    $svrname = "dthvcadccba02"	if ($list[0] eq "dthvcadccba20");
+    $svrname = "dthvcadctxb1"	if ($list[0] eq "dthvcadctxb0");
+    $svrname = "enwdcodctxb1"	if ($list[0] eq "enwdcodctxb0");
+    $svrname = "incoag13"	if ($list[0] eq "incoag10");
+    $svrname = "incoag23"	if ($list[0] eq "incoag20");
+    $svrname = "incoesg1"	if ($list[0] eq "coesg1");
+    $svrname = "incoesg2"	if ($list[0] eq "coesg2");
+    $svrname = "incofmc1"	if ($list[0] eq "cofmcc1");
+    $svrname = "incofmc2"	if ($list[0] eq "cofmcc2");
+    $svrname = "incofmc3"	if ($list[0] eq "cofmcc3");
+    $svrname = "incoga13"	if ($list[0] eq "incoga10");
+    $svrname = "incoga23"	if ($list[0] eq "incoga20");
+    $svrname = "inflesg1"	if ($list[0] eq "flesg1");
+    $svrname = "inflesg2"	if ($list[0] eq "flesg2");
+    $svrname = "inflfmc1"	if ($list[0] eq "flfmcc1");
+    $svrname = "inflfmc2"	if ($list[0] eq "flfmcc2");
+    $svrname = "inflfmc3"	if ($list[0] eq "flfmcc3");
+    $svrname = "inveri01"	if ($list[0] eq "inveri01-gig0");
+    $svrname = "inilfmc1"	if ($list[0] eq "ilfmcc1");
+    $svrname = "inilfmc2"	if ($list[0] eq "ilfmcc2");
+    $svrname = "inilfmc3"	if ($list[0] eq "ilfmcc3");
+    $svrname = "lnmtcocsmla15"	if ($list[0] eq "n1");
+    $svrname = "lnmtcodcag11"	if ($list[0] eq "lnmtcodcag10");
+    $svrname = "lnmtcodcag21"	if ($list[0] eq "lnmtcodcag20");
+    $svrname = "lnmtcodccba01"	if ($list[0] eq "lnmtcodccba10");
+    $svrname = "lnmtcodccba02"	if ($list[0] eq "lnmtcodccba20");
+    $svrname = "lnmtcodcdla11"	if ($list[0] eq "lnmtcodcdla1");
+    $svrname = "lnmtcodcdla21"	if ($list[0] eq "lnmtcodcdla2");
+    $svrname = "lnmtcodcdva11"	if ($list[0] eq "lnmtcodcdva1");
+    $svrname = "lnmtcodcdva21"	if ($list[0] eq "lnmtcodcdva2");
+    $svrname = "lnmtcodcdvb11"	if ($list[0] eq "lnmtcodcdvb1");
+    $svrname = "lnmtcodcdvb21"	if ($list[0] eq "lnmtcodcdvb2");
+    $svrname = "lnmtcodcga11"	if ($list[0] eq "lnmtcodcga10");
+    $svrname = "lnmtcodcga21"	if ($list[0] eq "lnmtcodcga20");
+    $svrname = "mapflex1"	if ($list[0] eq "mapflex");
+    $svrname = "miamflcsmla15"	if ($list[0] eq "n1");
+    $svrname = "miamfldccba01"	if ($list[0] eq "miamfldccba10");
+    $svrname = "miamfldccba02"	if ($list[0] eq "miamfldccba20");
+    $svrname = "miamfldctxb1"	if ($list[0] eq "miamfldctxb0");
+    $svrname = "pscafmc1"	if ($list[0] eq "cafmcc1");
+    $svrname = "pscafmc2"	if ($list[0] eq "cafmcc2");
+    $svrname = "pstofmc1"	if ($list[0] eq "tofmcc1");
+    $svrname = "pstofmc2"	if ($list[0] eq "tofmcc2");
+
+# compare the server name in the sudoers array with the server name in the chksudo array
+#   if match, compare the user name in the sudoers array with the user name in the chksudo array
+#     if match, check the date against today
+#       if exceeds date, flag as expired
+#     else
+#       flag as not in chksudo
+#   0       1         2                                       3   4
+#2dallas:hpietras:heather pietras,heather.pietras@intrado.com:yes:active
+#   0      1      2      3
+#2dallas:kzupan:999999:30000101
+# updated to change the date format
+
+    if ($arg ne "web") {
+# Write out to the morning report file
+
+# check the chksudo.dat file against the check.sudoers file
+      $inchksudo = 0;
+      $isexpired = 0;
+      $islocked = 0;
+      $hasroot = 0;
+      $errorstr = '';
+      for ($j = 0; $j <= $#chksudo; $j++) {
+        (@sudochk) = split(":", $chksudo[$j]);
+# Go to next chksudo.dat record if system name does not match        
+        next if($sudochk[0] ne $svrname);
+        if ($sudochk[1] eq $list[1]) {
+          $inchksudo = 1;
+# just check to see if the ticket has expired
+          if ($comparedate ge $sudochk[3]) {
+            $isexpired = $sudochk[3];
+          }
+# Record found, no need to continue
+          last;
+        }
+      } # end of for ($j = 0; $j <= $#chksudo; $j++)
+
+# Check for root access
+      if ($list[3] eq "yes") {
+        $hasroot = 1;
+      }
+
+# Check account status
+      if ($list[4] eq "locked") {
+        $islocked = 1;
+      }
+      
+
+# if the user wasn't found in the chksudoers file, check to see if they have root
+      if(!$employee || ($hasroot && !$inchksudo) || $isexpired) {
+          $errorstr = sprintf("ERROR: %-15s %-12s %-20s locked: %-6s %-22s %-22s\n",
+            $list[1],
+            $hasroot?'ROOT: YES':'',
+            $employee?'':'GECOS valid: NO',
+            $islocked?'YES':'NO',
+            ($hasroot && !$inchksudo)?'in chksudo.dat: NO':'',
+            $isexpired?"expired: $isexpired":'');
+        open (CONFIG, ">>$HOME/servers/$svrname/config.status");
+         print CONFIG $errorstr;
+        close CONFIG;
+        open (SUDOERS, ">>$HOME/servers/$svrname/sudoers.status");
+         print SUDOERS $errorstr;
+        close SUDOERS;
+      }
+    }
+
+#the output to the web report works
+    print "<tr>\n";
+    print "  <td class=\"$color\">$list[1]</td>\n";
+    print "  <td class=\"$color\">$list[2]</td>\n";
+    print "</tr>\n";
+#  }    # if not doing a minimal report, comment this and the check for salmon above
+}
+
+print "</table>\n";
+print "\n";
+print "</div>\n";
+print "\n";
+
+print "<?php include(\$Sitepath . '/footer.php'); ?>\n";
+
+print "</body>\n";
+print "</html>\n";

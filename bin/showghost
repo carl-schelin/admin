@@ -1,0 +1,143 @@
+#!/bin/ksh
+
+ADMIN=/usr/local/admin
+HTML=/usr/local/httpd/htsecure/reports/ghost.php
+TOTAL=0
+
+echo "<?php
+# Script: ghost.php
+# Owner: Carl Schelin
+# Coding Standard 3.0 Applied
+# See: https://incowk01/makers/index.php/Coding_Standards
+# Description:
+
+  include('settings.php');
+  include(\$Sitepath . '/guest.php');
+
+  \$package = "ghost.php";
+
+  logaccess(\$formVars['username'], \$package, \"Accessing the script.\");
+
+?>
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
+<title>Ghost Vulnerabilities</title>
+
+<style type=\"text/css\" title=\"currentStyle\" media=\"screen\">
+<?php include(\$Sitepath . \"/mobile.php\"); ?>
+</style>
+
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/jquery.js\"></script>
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>
+<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.js\"></script>
+<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.css\">
+
+</head>
+<body class=\"ui-widget-content\">
+
+<?php include(\$Sitepath . '/topmenu.start.php'); ?>
+<?php include(\$Sitepath . '/topmenu.end.php'); ?>
+
+<div class=\"main\">
+
+<table class=\"ui-styled-table\">
+<tr>
+  <th class=\"ui-state-default\">showghost: `date`</th>
+  <th class=\"ui-state-default\" width=\"20\"><a href=\"javascript:;\" onmousedown=\"toggleDiv('help');\">Help</a></th>
+</tr>
+</table>
+
+<div id=\"help\" style=\"display:none\">
+
+<div class=\"main-help ui-widget-content\">
+
+<h2>Ghost (glibc)</h2>
+
+
+</div>
+
+</div>
+
+
+<table class=\"ui-styled-table\">
+<tr>
+</tr>
+<tr>
+  <th class=\"ui-state-default\">Server</th>
+  <th class=\"ui-state-default\">glibc Version</th>
+  <th class=\"ui-state-default\">CVE-2015-0235</th>
+</tr>" > $HTML
+
+for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux | cut -f1 -d:`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+  if [[ -f $ADMIN/servers/$SERVER/ghost.output ]]
+  then
+    COUNT=0
+    TOTAL=$(( $TOTAL + 1 ))
+    for j in `cat $ADMIN/servers/$SERVER/ghost.output`
+    do
+      COUNT=$(( $COUNT + 1 ))
+      echo "<tr>" >> $HTML
+      echo "  <td class=\"ui-widget-content\">$SERVER</td>" >> $HTML
+      echo "  <td class=\"ui-widget-content\">$j</td>" >> $HTML
+
+      CLASS="ui-widget-content"
+      OUTPUT=`echo $j | awk -F\- '{print $2}'`
+      if [[ $OUTPUT = 'glibc' ]]
+      then
+        OUTPUT=`echo $j | awk -F\- '{print $3}'`
+      fi
+      MAJOR=`echo $OUTPUT | awk -F. '{print $1}'`
+      MINOR=`echo $OUTPUT | awk -F. '{print $2}'`
+      if [[ $MAJOR -eq 2 ]] && [[ $MINOR -lt 18 ]]
+      then
+        OUTPUT="Vulnerable"
+        CLASS="ui-state-error"
+      fi
+      if [[ -f $ADMIN/servers/$i/ghost.cve ]]
+      then
+        VULN=`grep -i "cve-2015-0235" $ADMIN/servers/$i/ghost.cve`
+        if [[ ! -z $VULN ]]
+        then
+          OUTPUT="Not Vulnerable (patched)"
+          CLASS="ui-widget-content"
+        fi
+      fi
+
+      echo "  <td class=\"$CLASS\">$OUTPUT</td>" >> $HTML
+      echo "</tr>" >> $HTML
+    done
+  else
+    if [[ ! $OS = "Linux" ]]
+    then
+      echo "<tr>" >> $HTML
+      echo "  <td class=\"ui-widget-content\">$SERVER</td>" >> $HTML
+      echo "  <td class=\"ui-widget-content\">Linux specific</td>" >> $HTML
+      echo "  <td class=\"ui-widget-content\">Not Vulnerable</td>" >> $HTML
+      echo "</tr>" >> $HTML
+    else
+      echo "<tr>" >> $HTML
+      echo "  <td class=\"ui-widget-content\">$SERVER</td>" >> $HTML
+      echo "  <td class=\"ui-widget-content\" colspan=\"2\">File not found</td>" >> $HTML
+      echo "</tr>" >> $HTML
+    fi
+  fi
+done
+
+echo "</table>
+
+<p>$TOTAL Servers</p>
+
+</div>
+
+<?php include(\$Sitepath . '/footer.php'); ?>
+
+</body>
+</html>" >> $HTML

@@ -1,0 +1,223 @@
+#!/bin/ksh
+
+# getspace - Retrieve the output of df -k
+# Owner: Carl Schelin
+
+PROGNAME="getspace"
+LOC=/usr/local/admin
+CHECK=$LOC/etc/diskspace.dat
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+# clear the morning.status report
+  if [ -f $SVRPATH/morning.status ]
+  then
+    rm $SVRPATH/morning.status
+  fi
+
+  TIMEOUT=80
+
+# Content here: scp the config file from here
+
+  CONTENT="diskspace"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  if [[ $OS = "HP-UX" ]]
+  then
+    /usr/bin/ssh $SERVER "/usr/bin/bdf -l" > $SVRPATH/$CONTENT.output &
+    PID=$!
+  fi
+  if [[ $OS = "OSF1" ]]
+  then
+    /usr/bin/ssh $SERVER "/bin/df -kP" > $SVRPATH/$CONTENT.output &
+    PID=$!
+  fi
+  if [[ $OS = "Linux" ]]
+  then
+    /usr/bin/ssh $SERVER "/bin/df -klP" > $SVRPATH/$CONTENT.output &
+    PID=$!
+  fi
+  if [[ $OS = "SunOS" ]]
+  then
+    /usr/bin/ssh $SERVER "/usr/bin/df -kl" > $SVRPATH/$CONTENT.output &
+    PID=$!
+  fi
+  if [[ $OS = "FreeBSD" ]]
+  then
+    /usr/bin/ssh $SERVER "/bin/df -kl" > $SVRPATH/$CONTENT.output &
+    PID=$!
+  fi
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+  if [[ -f $SVRPATH/$CONTENT.output ]]
+  then
+    if [[ $OS = "Linux" || $OS = "SunOS" || $OS = "HP-UX" || $OS = "FreeBSD" ]]
+    then
+      for j in `egrep "^(/dev|all_space|cloifs_pool|diskpool|rpool|sanpool|space|syslog_local|syslog_san)/" $SVRPATH/diskspace.output | awk '{print $NF":"$5}'`
+      do
+        FILESYSTEM=`echo $j | cut -f1 -d:`
+        SPACE=`echo $j | cut -f2 -d: | cut -f1 -d%`
+
+        WARNING=85
+        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f3 -d:`
+        if [ ! "$SPCHK" = "" ]
+        then
+          WARNING=$SPCHK
+        fi
+
+        ERROR=95
+        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f4 -d:`
+        if [ ! "$SPCHK" = "" ]
+        then
+          ERROR=$SPCHK
+        fi
+
+        if [[ $SPACE -ge $ERROR ]]
+        then
+          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
+          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
+          CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
+          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+          fi
+
+          if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
+          fi
+		
+        else
+          if [[ $SPACE -ge $WARNING ]]
+          then
+            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
+            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
+            CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
+            if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+            fi
+
+            if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
+            fi
+          fi
+        fi
+      done
+    fi
+    if [[ $OS = "OSF1" ]]
+    then
+      for j in `egrep "^(cluster_root|cluster_usr|cluster_var|data_domain|idb_domain|im_domain|ips_domain|ipslog_domain|mir1_domain|mir2_domain|misc_domain|raid2_domain|raid4_domain|root1_domain|root2_domain|root_domain|tmp_domain|u01_domain|u02_domain|u03_domain|u04_domain|u11_domain|u12_domain|u13_domain|u14_domain|u15_domain|u16_domain|u21_domain|u22_domain|u45_domain|u512_domain|u51_domain|u52_domain|usr_domain|var2_domain|var_domain)\#" $SVRPATH/diskspace.output | awk '{print $NF":"$5}'`
+      do
+        FILESYSTEM=`echo $j | cut -f1 -d:`
+        SPACE=`echo $j | cut -f2 -d: | cut -f1 -d%`
+
+        WARNING=85
+        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f3 -d:`
+        if [ ! "$SPCHK" = "" ]
+        then
+          WARNING=$SPCHK
+        fi
+
+        ERROR=95
+        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f4 -d:`
+        if [ ! "$SPCHK" = "" ]
+        then
+          ERROR=$SPCHK
+        fi
+
+        if [[ $SPACE -ge $ERROR ]]
+        then
+          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
+          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
+          CHKSPACE=`echo $FILESYSTEM | egrep "/(u|d)[0-9][0-9]"`
+          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+          fi
+        else
+          if [[ $SPACE -ge $WARNING ]]
+          then
+            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
+            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
+            CHKSPACE=`echo $FILESYSTEM | egrep "/(u|d)[0-9][0-9]"`
+            if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+            fi
+          fi
+        fi
+      done
+    fi
+  else
+    echo "ERROR: Unable to read diskspace.output file." >> $SVRPATH/config.status
+    echo "ERROR: Unable to read diskspace.output file." >> $SVRPATH/morning.status
+  fi
+
+done
+
+exit 0
+

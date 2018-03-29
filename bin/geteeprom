@@ -1,0 +1,101 @@
+#!/bin/ksh
+
+# geteeprom - Retrieve the output of eeprom
+# Owner: Carl Schelin
+
+PROGNAME="geteeprom"
+LOC=/usr/local/admin
+RUNBY=`/usr/xpg4/bin/id -u`
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+for i in `/usr/bin/grep -v "^#" $LOC/etc/servers | /usr/bin/grep SunOS | /usr/bin/egrep -v "(incoamb1|incoamb2|incopcc1|incopcc2)"`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=80
+
+# Content here: ssh the content and save it
+
+  CONTENT="eeprom"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  /usr/bin/ssh $SERVER "/usr/sbin/$CONTENT" > $SVRPATH/$CONTENT.output &
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# now report anyone that's not expected to be in TMPROOT to be reviewed
+
+  AUTO=`/usr/bin/grep "^auto-boot?" $SVRPATH/$CONTENT.output | /usr/bin/cut -f2 -d=`
+
+  if [[ "$AUTO" = "" ]]
+  then
+    AUTO="true"
+  fi
+
+  if [[ ! "$AUTO" = "true" ]]
+  then
+    echo "WARNING: auto-boot?=false. Server will not auto start after rebooting." >> $SVRPATH/config.status
+    echo "WARNING: auto-boot?=false. Server will not auto start after rebooting." >> $SVRPATH/morning.status
+  fi
+
+done
+
+exit 0
+

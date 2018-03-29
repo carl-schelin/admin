@@ -1,0 +1,942 @@
+#!/bin/ksh
+
+# processetc - Process the various output files placed in each server's /opt/intrado/etc directory
+# Owner: Carl Schelin
+
+PROGNAME="processetc"
+LOC=/usr/local/admin
+RUNBY=`/usr/xpg4/bin/id -u`
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+
+# Standard function to take two files, compare them, and report the status
+
+compare_Content() {
+
+  NEWFILE=`echo $2 | cut -f1 -d.`
+
+  if [[ -f $1/$2 ]]
+  then
+    if [[ -f $1/$NEWFILE.good ]]
+    then
+      /usr/bin/diff $1/$2 $1/$NEWFILE.good > $1/$NEWFILE.diff
+      if [[ -s $1/$NEWFILE.diff ]]
+      then
+        echo "ERROR: $2 differences. Check server." >> $1/config.status
+        echo "ERROR: $2 differences. Check server." >> $1/morning.status
+      fi
+    else
+      echo "ERROR: $1/$NEWFILE.good file not found." >> $1/config.status
+      echo "ERROR: $1/$NEWFILE.good file not found." >> $1/morning.status
+    fi
+  else
+    echo "ERROR: $1/$2 file not found." >> $1/config.status
+    echo "ERROR: $1/$2 file not found." >> $1/morning.status
+  fi
+
+}
+
+
+# Now run through the server list and process the files
+
+for i in `/usr/bin/grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+  TIMEOUT=80
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir -p $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+# Set up the temporary location for output files
+  TMPPATH="$LOC/tmp/etc"
+
+# Be in the right directory
+  cd $LOC/tmp
+
+# Remove the tmp/etc directory
+  if [[ -d $TMPPATH ]]
+  then
+    rm -rf $TMPPATH
+  fi
+
+# Create the tmp directory
+  if [[ ! -d $TMPPATH ]]
+  then
+    mkdir -p $TMPPATH
+    chmod 775 $TMPPATH
+  fi
+
+# copy the server file into the temporary directory
+  if [[ -f $SVRPATH/etc.tar ]]
+  then
+    cp $SVRPATH/etc.tar $TMPPATH/
+    cd $TMPPATH
+    tar fx etc.tar
+  fi
+
+  echo "Processing: $SERVER"
+
+# ready to go; all files are in place in the temporary area.
+# process time
+
+#########################
+####
+####  Template: Straight Copy of data from /opt/intrado/etc
+####  replace the file name in 'CONTENT': 15 lines (15yy)
+####
+#########################
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getbackups
+#getbackups
+#runscript getbackups
+#++++++++++++++++++++++++++++++++++++++++++
+#
+# checking the output of bpclimagelist for backup schedules
+#  CONTENT='backups.output'
+#
+#  if [ -f $TMPPATH/$CONTENT ]
+#  then
+#    cp $TMPPATH/$CONTENT $SVRPATH/
+#    chmod 664 $SVRPATH/$CONTENT
+#  fi
+
+#########################
+####
+####  Template: Copy and compare of data from /opt/intrado/etc 
+####  to the .good file in the servers directory
+####  replace the file name in 'CONTENT': 19 lines (19yy)
+####
+#########################
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getarcconf
+#getarcconf
+#runscript getaarcconf
+#++++++++++++++++++++++++++++++++++++++++++
+#
+# checking for a failed disk
+#  CONTENT='arcconf.output'
+#
+#  if [ -f $TMPPATH/$CONTENT ]
+#  then
+#    cp $TMPPATH/$CONTENT $SVRPATH/
+#    chmod 664 $SVRPATH/$CONTENT
+#
+#    compare_Content $SVRPATH $CONTENT
+#
+#  fi
+
+
+#######################
+####
+####  The following sections process the various output files
+####
+#######################
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getapa
+#getapa
+#runscript getapa
+#++++++++++++++++++++++++++++++++++++++++++
+
+  if [[ $OS = 'HP-UX' ]]
+  then
+    CONTENT='apa.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getarcconf
+#getarcconf
+#runscript getarcconf
+#++++++++++++++++++++++++++++++++++++++++++
+
+# Sun specific command
+# checking for a failed disk
+  if [[ $OS = 'SunOS' ]]
+  then
+    CONTENT='arcconf.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getarray
+#getarray
+#runscript getarray
+#++++++++++++++++++++++++++++++++++++++++++
+
+# Tru64 specific output
+# checking the output of volprint for a failed plex
+  if [[ $OS = 'OSF1' ]]
+  then
+    CONTENT='chkarray.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getbackups
+#getbackups
+#runscript getbackups
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of bpclimagelist for backup schedules
+  CONTENT='backups.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getbash
+#getbash
+#runscript getbash
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of bashvul for vulnerabilities
+  CONTENT='bash.vulnerable'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getbashcve
+#getbashcve
+#runscript getbashcve
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the .cve output for bash
+  CONTENT='bash.cve'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getchkvx
+#getchkvx
+#runscript getchkvx
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking vx 
+  CONTENT='chkvx.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getcluster
+#getcluster
+#runscript getcluster
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking cmviewcl for cluster errors
+  CONTENT='cmviewcl.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getcluster
+#getcluster
+#runscript getcluster
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking clustat for cluster status
+  CONTENT='clustat.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getcrash
+#getcrash
+#runscript getcrash
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking clustat for cluster status
+  CONTENT='chkcrash.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getdef
+#getdef
+#runscript getdef
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the various versions files
+  CONTENT='defunct.data'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of geteeprom
+#geteeprom
+#runscript geteeprom
+#++++++++++++++++++++++++++++++++++++++++++
+
+# Sun specific command
+# Checking for the auto-boot? output to ensure Sun systems will start in the event of a reboot
+  if [[ $OS = "SunOS" ]]
+  then
+    CONTENT='eeprom.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      AUTO=`/usr/bin/grep "^auto-boot?" $SVRPATH/$CONTENT | /usr/bin/cut -f2 -d=`
+
+      if [[ "$AUTO" = "" ]]
+      then
+        AUTO="true"
+      fi
+
+      if [[ ! "$AUTO" = "true" ]]
+      then
+        echo "WARNING: auto-boot?=false. Server will not auto start after rebooting." >> $SVRPATH/config.status
+        echo "WARNING: auto-boot?=false. Server will not auto start after rebooting." >> $SVRPATH/morning.status
+      fi
+    fi
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of geteth
+#geteth
+#runscript geteth
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking eth for cluster status
+  CONTENT='chketh.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getghost
+#getghost
+#runscript getghost
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of chkghost for vulnerabilities
+  CONTENT='ghost.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getghostcve
+#getghostcve
+#runscript getghostcve
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the .cve output for ghost
+  CONTENT='ghost.cve'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#runscript gethpevent
+#runscript getif
+#runscript getiostat
+#runscript getintradologs
+#runscript getkernal
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getmachinfo
+#getmachinfo
+#runscript getmachinfo
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of machinfo on HP-UX systems
+  if [[ $OS = 'HP-UX' ]]
+  then
+    CONTENT='machinfo.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getmegarc
+#getmegarc
+#runscript getmegarc
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of megarc for a failed disk
+  CONTENT='megarc.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getmetadb
+#getmetadb
+#runscript getmetadb
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of metadb for corrupted meta info
+  if [[ $OS = 'SunOS' ]]
+  then
+    CONTENT='metadb.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getmetastat
+#getmetastat
+#runscript getmetastat
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of metastat for failed partitions or disks
+  if [[ $OS = 'SunOS' ]]
+  then
+    CONTENT='metastat.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+
+#runscript getmpathd
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getnetstat
+#getnetstat
+#runscript getnetstat
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting netstat output for comparison
+  CONTENT='netstat.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getnetstat
+#getovconf
+#runscript getovconf
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting openview configuration output for comparison
+  CONTENT='getovconf.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Store chrony.conf
+#getchrony
+#runscript getchrony
+#++++++++++++++++++++++++++++++++++++++++++
+
+  CONTENT='chrony.conf'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Store ntp.conf
+#getntpd
+#runscript getntpd
+#++++++++++++++++++++++++++++++++++++++++++
+
+  CONTENT='ntp.conf'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#runscript gettime
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getpackages
+#getpackages
+#runscript getpackages
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the various versions files
+  CONTENT='chkpackages.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of passwd
+#getpasswd
+#runscript getpasswd
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking clustat for cluster status
+  CONTENT='passwd'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of group
+#getgroup
+#runscript getgroup
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking clustat for cluster status
+  CONTENT='group'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+#runscript getports
+# extra processing after done
+
+#runscript getprocesses
+# ps capture during run
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getprtdiag
+#getprtdiag
+#runscript getprtdiag
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking clustat for cluster status
+  CONTENT='prtdiag.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getpwck
+#getpwck
+#runscript getpwck
+#++++++++++++++++++++++++++++++++++++++++++
+
+# Checking for consistent passwd files (with opasswd)
+  CONTENT='pwck.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#runscript getraid
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getroutetable
+#getroutetable
+#runscript getrouteable
+#++++++++++++++++++++++++++++++++++++++++++
+
+# get the route table information
+  CONTENT='routetable.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getroutes
+#getroutes
+#runscript getroutes
+#++++++++++++++++++++++++++++++++++++++++++
+
+# get the route information
+  CONTENT='routes.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getsan
+#getsan
+#runscript getsan
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the san output
+  CONTENT='chksan.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getsecurity
+#getsecurity
+#runscript getsecurity
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting security settings
+  CONTENT='chksecurity.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+# check the file for the configured settings
+    if [ -f $SVRPATH/$CONTENT.output ]
+    then
+# check for the first parameter; PermitRootLogin
+      PRL=`grep -i permitrootlogin $SVRPATH/$CONTENT.output | awk '{print $NF}' | tr [A-Z] [a-z]`
+      if [ $PRL = "yes" ]
+      then
+        echo "ERROR: Remote root login is permitted to this system" >> $SVRPATH/config.status
+        echo "ERROR: Remote root login is permitted to this system" >> $SVRPATH/morning.status
+      fi
+    fi
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getserver
+#getserver
+#runscript getserver
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the san output
+  CONTENT='chkserver.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#runscript getservices
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getstack
+#getstack
+#runscript getstack
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the stack information
+  CONTENT='chkstack.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#runscript getspace
+#runscript getsudo
+#runscript getsudoers
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getsync
+#getsync
+#runscript getsync
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the sync output
+  CONTENT='chksync.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#runscript getsys
+#runscript getusers
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getversions
+#getversions
+#runscript getversions
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the various versions files
+  CONTENT='netbackup.version'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getversions
+#getversions
+#runscript getversions
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the various versions files
+  CONTENT='ovc.version'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getvxprint
+#getvxprint
+#runscript getvxprint
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of vxprint for a failed plex
+  if [[ $OS = 'HP-UX' ]]
+  then
+    CONTENT='vxprint.output'
+
+    if [ -f $TMPPATH/$CONTENT ]
+    then
+      cp $TMPPATH/$CONTENT $SVRPATH/
+      chmod 664 $SVRPATH/$CONTENT
+
+      compare_Content $SVRPATH $CONTENT
+
+    fi
+  fi
+
+done
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of lockuser
+#lockuser
+#runscript lockuser
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the various versions files
+  CONTENT='lockuser.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+exit 0
+
+#runscript mkgoodsudo
+#runscript amberck.pl
+
+#runscript chkcfg2html
+#runscript chkprocesses
+#runscript chkservers
+
+#runscript showdef
+#runscript showbash
+#runscript showsudo
+#runscript showntp
+#runscript showmpathd
+#runscript showusers
+

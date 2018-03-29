@@ -1,0 +1,170 @@
+#!/usr/bin/perl
+#
+# chkmessages - This script processes the two filters against each servers messages file. 
+# Two reports are created which are e-mailed to admins for review.
+#
+# 2005/05/12 v1.0 - Carl Schelin
+# 2007/12/06 v1.1 - TCS - Update for Intrado
+# 2009/11/19 v1.2 - TCS - Update for IEN
+
+$home="/usr/local/admin";
+$whocares="";
+$path="$home/servers";
+
+$date = shift;
+if ($date == "") {
+  $date=`cat $path/messages.date`;
+}
+chomp $date;
+
+# copy the exclude files into the messages directory so folks can see 
+# what's being parsed.
+`cp $home/etc/messages.* /var/apache2/htsecure/messages`;
+
+#####
+# Nothing else should need to be changed after this point
+#####
+
+# servers.messages is a combination of the servers file (built by root and php) plus the drac file
+@servers=`grep -v "^#" $home/etc/servers.messages`;
+
+# Retrieve the search strings
+@exclude=`grep -v "^#" $home/etc/messages.exclude`;
+@security=`grep -v "^#" $home/etc/messages.security`;
+@security_exclude=`grep -v "^#" $home/etc/messages.security.exclude`;
+
+# Remove the trailing \n's
+for ($i=0; $i<=$#exclude; $i++) {
+  chomp $exclude[$i];
+}
+for ($i=0; $i<=$#security; $i++) {
+  chomp $security[$i];
+  $exclude[$#exclude+1]=$security[$i];
+}
+for ($i=0; $i<=$#security_exclude; $i++) {
+  chomp $security_exclude[$i];
+}
+
+# Create the log files for today
+open (LOG,      ">$home/logs/logfile/ien.logfile.$date") or die "Unable to open report file";
+open (EMAIL,    ">$home/logs/report/ien.report.$date") or die "Unable to open report file";
+open (SECURITY, ">$home/logs/security/ien.security.$date") or die "Unable to open report file";
+
+# Set up the start of the log files
+print LOG      "\n";
+print EMAIL    "\n";
+print SECURITY "\n";
+
+$startdate=`date`;
+print LOG      "BEGIN $startdate";
+print EMAIL    "BEGIN $startdate";
+print SECURITY "BEGIN $startdate";
+
+for ($i=0; $i <= $#servers; $i++) {
+  chop $servers[$i];
+
+  ($svrname,$cluster,$os,$tzone,$project) = split(":", $servers[$i]);
+
+  if ($project eq "IEN") {
+    if ($os eq "SunOS") {
+      doServer($svrname, $svrname, "/var/adm");
+    }
+    if ($os eq "Linux") {
+      doServer($svrname, $svrname, "/var/log");
+    }
+    if ($os eq "HP-UX") {
+      doServer($svrname, $svrname, "/var/log");
+    }
+    if ($os eq "OSF1") {
+      doServer($svrname, $svrname, "/var/log");
+    }
+    if ($os eq "FreeBSD") {
+      doServer($svrname, $svrname, "/var/log");
+    }
+    if ($os eq "DRAC") {
+      doServer($svrname, $svrname, "/var/log");
+    }
+  }
+}
+
+$enddate=`date`;
+print LOG      "\nEND   $enddate\n";
+print EMAIL    "\nEND   $enddate\n";
+print SECURITY "\nEND   $enddate\n";
+
+close SECURITY;
+close EMAIL;
+close LOG;
+
+#system("/usr/bin/mail -s 'Exception Report' $whocares < /export/home/cschelin/logs/report/report.$date");
+system("cp $home/logs/report/ien.report.$date /var/apache2/htsecure/messages");
+system("cp $home/logs/security/ien.security.$date /var/apache2/htsecure/messages");
+
+#system("gzip -9 -f /export/home/cschelin/logs/security/security.$date");
+#system("gzip -9 -f /export/home/cschelin/logs/report/report.$date");
+#system("gzip -9 -f /export/home/cschelin/logs/logfile/logfile.$date");
+
+exit 0;
+
+# Subroutine: doServer
+# Args:
+#   $server   - name of server where logs originated
+#   $host     - server hosting the logs. Typically the same unless server is remote
+#   $location - path to the logs. Various OS's have different locations of messages. Plus
+#               in the event of a remote server, the log file may be in a holding area.
+
+sub doServer {
+  $server = $_[0];  
+  $host = $_[1];
+  $location = $_[2];
+
+# Process the server logs
+
+  print LOG      "\nProcessing $server\n";
+  print EMAIL    "\nProcessing $server\n";
+  print SECURITY "\nProcessing $server\n";
+
+# Create the hostname directory if it doesn't exist
+  if ( ! -d "$path/$server" ) {
+    mkdir "$path/$server",0775;
+  }
+
+# Capture the messages file from the host
+#  system("scp $host:$location/messages $path/$server/messages.$date");
+
+  open (INPUT, "$path/$server/messages.$date") or print EMAIL "ERROR: Unable to open $path/$server/messages.$date\n";
+  while (<INPUT>) {
+    chomp;
+
+# Scan the log and exclude the known messages
+    $dont=0;
+    for ($j=0; $j <= $#exclude; $j++) {
+      if ($_ =~ /$exclude[$j]/) {
+        $dont=1;
+      }
+    }
+    if (0 == $dont) {
+      print EMAIL $_, "\n";
+    }
+
+# Scan the log searching for the security information
+    for ($k=0; $k <= $#security; $k++) {
+      if ($_ =~ /$security[$k]/) {
+        $dont=0;
+        for ($l=0; $l <= $#security_exclude; $l++) {
+          if ($_ =~ /$security_exclude[$l]/) {
+            $dont=1;
+          }
+        }
+        if (0 == $dont) {
+          print SECURITY $_, "\n";
+        }
+      }
+    }
+  }
+  close INPUT;
+
+# finally compress the captured log file
+#  system("gzip -9 -f $path/$server/messages.$date");
+}
+

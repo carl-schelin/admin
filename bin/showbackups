@@ -1,0 +1,66 @@
+#!/bin/ksh
+
+ADMIN=/usr/local/admin
+HTML="/usr/local/httpd/htsecure/reports/backups.html"
+
+echo "<html>" > $HTML
+echo "<head>" >> $HTML
+echo "</head>" >> $HTML
+echo "<body>" >> $HTML
+
+echo "<p>Showing the last time a backup ran on a system. Runs the '/usr/openv/netbackup/bin/bpclimagelist' command" >> $HTML
+echo "to get the list of backups. Script captures just the top line showing the last backup of the system." >> $HTML
+echo "The @ indicates the existence of a '/usr/openv/netbackup/bp.conf' file. The following server is the first " >> $HTML
+echo "SERVER entry in the bp.conf file which is the default used by bpclimagelist.</p>" >> $HTML
+
+echo "<p>Note: The CLIENT_NAME in the bp.conf file must match exactly what's on the Backup team's console and case " >> $HTML
+echo "DOES matter.</p>" >> $HTML
+
+echo "<h2>Last Ran: `date`</h2>" >> $HTML
+
+echo "<pre>" >> $HTML
+echo "Server          @ Zone    SERVER          Backed Up         Expires       Files      KB     C Sched Type      Policy" >> $HTML
+echo "--------------- - ------- --------------- ----------------  ---------- -------- ----------- - --------------- ------------" >> $HTML
+
+for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+do
+  OUTPUT=""
+  CONF=" "
+  SERVER=""
+  ZONE='Unknown'
+
+  if [[ -f $ADMIN/servers/$i/backups.output ]]
+  then
+    OUTPUT=`head -3 $ADMIN/servers/$i/backups.output | tail -1`
+  fi
+
+  if [[ -f $ADMIN/servers/$i/bp.conf ]]
+  then
+    SERVER=`grep 'SERVER' $ADMIN/servers/$i/bp.conf | head -1 | awk '{print $NF}' | cut -f1 -d.`
+    CONF="@"
+  fi
+
+  ZONECHECK=`/usr/local/bin/inventory -n -d $i | grep E911`
+  if [[ ! -z $ZONECHECK ]]
+  then
+    ZONE='E911'
+  fi
+  ZONECHECK=`/usr/local/bin/inventory -n -d $i | grep CORP`
+  if [[ ! -z $ZONECHECK ]]
+  then
+    ZONE='CORP'
+  fi
+  ZONECHECK=`/usr/local/bin/inventory -n -d $i | grep DMZ`
+  if [[ ! -z $ZONECHECK ]]
+  then
+    ZONE='DMZ'
+  fi
+
+  echo "`printf "%15s" $i` $CONF `printf "%7s" $ZONE` `printf "%15s" $SERVER` $OUTPUT" >> $HTML
+
+done
+
+echo "</pre>" >> $HTML
+
+echo "</body>" >> $HTML
+echo "</html>" >> $HTML

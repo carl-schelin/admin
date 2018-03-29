@@ -1,0 +1,282 @@
+#!/bin/ksh -x
+
+# this script will check the various systems to see if access can be gained (password or other changes)
+# and check the data output for accuracy
+# a report needs to be written but only e-mailed if a problem occurs. So write all data out then check for errors 
+# at the end and e-mail then.
+#
+# metastat - Solaris disk checking. check for file date then errors
+# raidman.status - Linux disk checking. date and errors
+# 01/28/2009 - Added check for iostat to only report if diff file is not empty, i.e. new or additional errors TO
+# 01/30/2009 - Added check for WARIGN from config.status TO
+# 09/02/2014 - Split the email into three reports due to size.
+# 11/28/2016 - Remove the email to the teams
+
+WHOCARES=""
+WHOCARES="carl.schelin@intrado.com"
+WHOCARES="carl.schelin@intrado.com kzupan@intrado.com paul.pietras@intrado.com tom.cooper@intrado.com james.noyes@itrado.com"
+WHOCARES="unixadmins@intrado.com"
+MON=`date +"%m"`
+MONTH=`date +"%B"`
+DAY=`date +"%d"`
+YEAR=`date +"%Y"`
+LOC=/usr/local/admin
+LOG="$LOC/output/status"
+USER="$LOC/output/status.user"
+WARNING="$LOC/output/status.warning"
+ERROR="$LOC/output/status.error"
+HTML="/var/apache2/htsecure/status/status.${YEAR}${MON}${DAY}.html"
+# activate to see additional messages on the command line. If debug is active, e-mail will not be sent
+#DEBUG="Yes"
+
+if [ -f $LOG ]
+then
+  rm $LOG
+fi
+
+if [ -f $USER ]
+then
+  rm $USER
+fi
+
+if [ -f $WARNING ]
+then
+  rm $WARNING
+fi
+
+if [ -f $ERROR ]
+then
+  rm $ERROR
+fi
+
+if [ -f $HTML ]
+then
+  rm $HTML
+fi
+
+echo "<html>" > $HTML
+echo "<head>" >> $HTML
+echo "<title>Server Status Report</title>" >> $HTML
+echo "<h3 align=center>Server Status Report</h3>" >> $HTML
+echo "</head>" >> $HTML
+echo "<body>" >> $HTML
+echo "<pre>" >> $HTML
+echo "" >> $HTML
+echo "<ul>" >> $HTML
+echo "  <li>ERROR - System problems that need to be reviewed.</li>" >> $HTML
+echo "  <li>WARNING - Issues that might, after a few days, turn in to a failed hard disk or other system problem.</li>" >> $HTML
+echo "</ul>" >> $HTML
+echo "" >> $HTML
+echo "<p>A good copy of the output of the command is saved on incojs01:/usr/local/admin/servers/[servername]. Each night the " >> $HTML
+echo "server generates output from the various commands; iostat, metastat, metadb, raidctl, and others. That output is diff'd against " >> $HTML
+echo "the known good file on incojs01. If the diff turns up something, it is noted on this report as an ERROR or WARNING depending " >> $HTML
+echo "on the perceived severity. Resolving the problem consists of going in to the server directory and copying the current <b>.output</b> " >> $HTML
+echo "file over the same named <b>.good</b> file." >> $HTML
+echo "" >> $HTML
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -z "$DEBUG" ]; then echo "Server: $SERVER"; fi
+
+  echo $SERVER >> $USER
+  echo "============" >> $USER
+  echo $SERVER >> $WARNING
+  echo "============" >> $WARNING
+  echo $SERVER >> $ERROR
+  echo "============" >> $ERROR
+  echo $SERVER >> $HTML
+  echo "============" >> $HTML
+
+# Retrieves any ERROR messages from the config file. 
+# The config file also catches any unable to connect problems.
+
+  if [ ! -z "$DEBUG" ]; then echo "Checking Config"; fi
+
+  if [ -f $SVRPATH/config.status ]
+  then
+# changing to have 3 emails vs 1
+    grep "ERROR" $SVRPATH/morning.status >> $ERROR
+    grep "WARNING" $SVRPATH/morning.status >> $WARNING
+    cat $SVRPATH/sudoers.status >> $USER
+
+    grep "ERROR" $SVRPATH/config.status >> $HTML
+    grep "WARNING" $SVRPATH/config.status >> $HTML
+    grep "WARNING" $SVRPATH/config.status >> $HTML
+    rm $SVRPATH/config.status
+  fi
+
+# DiskSuite process:
+# Mainly looking for "Needs maintenance"
+# If that's found, each of the affected mirrors will report "Invoke:" to repair the problem
+# There should be output from all servers so report a problem if no report exists.
+
+  if [ ! -z "$DEBUG" ]; then echo "Checking DiskSuite"; fi
+
+  if [ $OS = "SunOS" ]
+  then
+
+    if [ -f $SVRPATH/metastat.output ]
+    then
+      FDATE=`ls -l $SVRPATH/metastat.output|awk '{print $7}'`
+      if [[ $FDATE -lt 10 ]]
+      then
+        FDATE="0$FDATE"
+      fi
+      if [ $FDATE != $DAY ]
+      then
+        echo "ERROR: metastat is not current." >> $ERROR
+        echo "ERROR: metastat is not current." >> $HTML
+      fi
+      FAILURE=`grep "Needs maintenance" $SVRPATH/metastat.output`
+      if [ ! -z "${FAILURE}" ]
+      then
+        echo "ERROR: System needs maintenance." >> $ERROR
+        grep "Invoke:" $SVRPATH/metastat.output|sort|uniq >> $ERROR
+        echo "ERROR: System needs maintenance." >> $HTML
+        grep "Invoke:" $SVRPATH/metastat.output|sort|uniq >> $HTML
+      fi
+    else
+      echo "ERROR: No Disk Suite metastat report" >> $ERROR
+      echo "ERROR: No Disk Suite metastat report" >> $HTML
+    fi
+
+    if [ -f $SVRPATH/metadb.output ]
+    then
+      grep "there are no existing databases" $SVRPATH/metadb.output > /dev/null
+      if [[ $? -ne 0 ]]
+      then
+        grep "No such file or directory" $SVRPATH/metadb.output > /dev/null
+        if [[ $? -ne 0 ]]
+        then
+          grep "metadb:  not found" $SVRPATH/metadb.output > /dev/null
+          if [[ $? -ne 0 ]]
+          then
+            DBLINES=`wc -l $SVRPATH/metadb.output | awk '{print $1}'`
+            if [[ $DBLINES -lt 5 ]]
+            then
+              echo "ERROR: Insufficient replica databases." >> $ERROR
+              echo "ERROR: Insufficient replica databases." >> $HTML
+            fi
+          fi
+        fi
+      fi
+    else
+      echo "ERROR: No Disk Suite replica report." >> $ERROR
+      echo "ERROR: No Disk Suite replica report." >> $HTML
+    fi
+
+  fi
+
+  if [ ! -z "$DEBUG" ]; then echo "Checking iostat"; fi
+
+  if [ -f $SVRPATH/iostat.output ]
+  then
+    for j in `grep "Hard Errors:" $SVRPATH/iostat.output | awk '{print $1":"$2":"$3":"$4":"$5":"$6":"$7":"$8":"$9":"$10}'`
+    do
+      if [ ! -z "$DEBUG" ]; then echo "Checking $j"; fi
+
+      DEVLEN=`echo $j | cut -f1 -d:`
+      LAST=`echo $j | cut -f13 -d:`
+      if [[ -z "$LAST" ]]
+      then
+        DEVICE=`echo $j | cut -f1 -d: | sed -e "s/Soft//g"`
+        HARD=`echo $j | cut -f8 -d:`
+      else
+        DEVICE=`echo $j | cut -f1 -d:`
+        HARD=`echo $j | cut -f9 -d:`
+      fi
+
+      if [ ! -z "$DEBUG" ]; then echo "Checking $DEVICE:$HARD"; fi
+
+      if [[ ${#DEVLEN} -lt 20 ]]
+      then
+        if [[ $HARD -gt 3 ]] && [[ -s $SVRPATH/iostat.diff ]]
+        then
+          echo "WARNING: There are $HARD Hard Errors on device $DEVICE" >> $WARNING
+          echo "WARNING: There are $HARD Hard Errors on device $DEVICE" >> $HTML
+        fi
+      fi
+    done
+  fi
+
+# check the status of the messages file.
+  if [ ! -z "$DEBUG" ]; then echo "Checking messages"; fi
+
+  MSGDATE=`cat $LOC/servers/messages.date`
+
+  if [[ -f $SVRPATH/messages.$MSGDATE ]]
+  then
+    if [[ ! -s $SVRPATH/messages.$MSGDATE ]]
+    then
+# since Tru64 has logs in a different place, we won't get messages files from it... yet
+      if [[ ! "$OS" = "OSF1" ]]
+      then
+        echo "WARNING: The messages file for $MSGDATE is zero bytes. Is logging working?" >> $WARNING
+        echo "WARNING: The messages file for $MSGDATE is zero bytes. Is logging working?" >> $HTML
+      fi
+    fi
+  else
+    echo "WARNING: The messages file for $MSGDATE doesn't exist." >> $WARNING
+    echo "WARNING: The messages file for $MSGDATE doesn't exist." >> $HTML
+  fi
+
+# check the status of defunct processes
+  if [ ! -z "$DEBUG" ]; then echo "Checking defunct processes"; fi
+
+  if [[ -s $SVRPATH/defunct.data ]]
+  then
+    MANY=`wc -l $SVRPATH/defunct.data | awk '{print $1}'`
+    echo "WARNING: $MANY defunct processes found" >> $WARNING
+    echo "WARNING: $MANY defunct processes found" >> $HTML
+  fi
+
+  echo "" >> $ERROR
+  echo "" >> $WARNING
+  echo "" >> $USER
+
+  echo "" >> $HTML
+
+done
+
+echo "</pre>" >> $HTML
+echo "</body>" >> $HTML
+echo "</html>" >> $HTML
+
+chmod 664 $HTML
+
+if [[ ! -z "$WHOCARES" ]]
+then
+  OUTPUT=`grep "ERROR" $ERROR`
+  if [ ! -z "$OUTPUT" ]
+  then
+    ERRORSUB="$MAIL Error Status Report: Errors Found"
+  else
+    ERRORSUB="$MAIL Error Status Report: All is well"
+  fi
+  OUTPUT=`grep "WARNING" $WARNING`
+  if [ ! -z "$OUTPUT" ]
+  then
+    ERRORWARN="$MAIL Warning Status Report: Warnings Found"
+  else
+    ERRORWARN="$MAIL Warning Status Report: All is well"
+  fi
+  OUTPUT=`grep "ERROR" $USER`
+  if [ ! -z "$OUTPUT" ]
+  then
+    USERERROR="$MAIL User Status Report: Errors Found"
+  else
+    USERERROR="$MAIL User Status Report: All is well"
+  fi
+
+#  if [ -z "$DEBUG" ]
+#  then 
+#    cat $ERROR | mailx -s "$ERRORSUB" $WHOCARES
+#    cat $WARNING | mailx -s "$ERRORWARN" $WHOCARES
+#    cat $USER | mailx -s "$USERERROR" $WHOCARES
+#  fi
+fi
+

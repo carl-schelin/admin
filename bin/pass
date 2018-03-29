@@ -1,0 +1,854 @@
+#!/opt/sfw/bin/expect
+
+package require Expect
+
+exp_log_user 0
+
+# long timeout because of slow response on a couple of systems
+set timeout 60
+
+set env(TERM) dumb
+
+array set OPTS {
+  host     ""
+  user     ""
+  opasswd  ""
+  npasswd  ""
+  passwd   "passwd"
+  prompt   "(% |# |> |\\$ |:)$"
+  verbose  "on"
+  debug    "on"
+}
+
+array set VERB {
+  rsa     ""
+
+  initpw1 ""
+  initpw2 ""
+
+  oldpw1  ""
+  oldpw2  ""
+  oldpw3  ""
+  oldpw4  ""
+  oldpw5  ""
+  oldpw6  ""
+
+  newpw1  ""
+  newpw2  ""
+  newpw3  ""
+  newpw4  ""
+  newpw5  ""
+  newpw6  ""
+  newpw7  ""
+  newpw8  ""
+  newpw9  ""
+  newpw10 ""
+  newpw11 ""
+  newpw12 ""
+  newpw13 ""
+  newpw14 ""
+  newpw15 ""
+  pick1   ""
+  pick2   ""
+  sorry   ""
+
+  done1   ""
+  done2   ""
+
+  deny    ""
+}
+
+array set DEB {
+  debug1  ""
+  debug2  ""
+  debug3  ""
+  debug4  ""
+  debug5  ""
+  debug6  ""
+  debug7  ""
+  debug8  ""
+  debug9  ""
+  debug10 ""
+  debug11 ""
+  debug12 ""
+  debug13 ""
+  debug14 ""
+  debug15 ""
+  debug16 ""
+}
+
+proc usage {code} {
+  global OPTS
+  puts [expr {$code ? "stderr" : "stdout"}] \
+    "$::argv0 -user username -host hostname -opasswd oldpassword -npasswd newpasswd ?options?
+    -prompt prompt   (RE of prompt to expect on host {$OPTS(prompt)})
+    -verbose on|off  (display process messages)
+    -debug on|off    (display status messages)
+    -help            (print out this message)"
+  exit $code
+}
+
+proc parseargs {argc argv} {
+  global OPTS
+  foreach {key val} $argv {
+    switch -exact -- $key {
+      "-user"    { set OPTS(user)    $val }
+      "-host"    { set OPTS(host)    $val }
+      "-opasswd" { set OPTS(opasswd) $val }
+      "-npasswd" { set OPTS(npasswd) $val }
+      "-prompt"  { set OPTS(prompt)  $val }
+      "-verbose" { set OPTS(verbose) $val }
+      "-debug"   { set OPTS(debug)   $val }
+      "-log"     { exp_log_user      $val }
+      "-help"    { usage 0 }
+    }
+  }
+}
+parseargs $argc $argv
+
+if {$OPTS(host) == "" || $OPTS(user) == "" || $OPTS(opasswd) == "" || $OPTS(npasswd) == "" } {
+  usage 1
+}
+
+if {$OPTS(verbose) == "on"} {
+  set VERB(rsa)     "At the RSA key fingerprint prompt\n"
+
+  set VERB(initpw1) "first login prompt (capital ^P prompt)\n"
+  set VERB(initpw2) "first AIX/Linux login prompt\n"
+
+  set VERB(oldpw1)  "found Old password: sending $OPTS(opasswd)\n"
+  set VERB(oldpw2)  "found $OPTS(user)'s Old password: sending $OPTS(opasswd)\n"
+  set VERB(oldpw3)  "found (current) UNIX password: Sending $OPTS(opasswd)\n"
+  set VERB(oldpw4)  "found Enter existing login password: sending $OPTS(opasswd)\n"
+  set VERB(oldpw5)  "found Enter login password: sending $OPTS(opasswd)\n"
+  set VERB(oldpw6)  "found Old Password: sending $OPTS(opasswd)\n"
+
+  set VERB(newpw1)  "found New password: sending $OPTS(npasswd)\n"
+  set VERB(newpw2)  "found Enter the new password again: sending $OPTS(npasswd)\n"
+  set VERB(newpw3)  "found Re-enter $OPTS(user)'s new password: sending $OPTS(npasswd)\n"
+  set VERB(newpw4)  "found $OPTS(user)'s New password: sending $OPTS(npasswd)\n"
+  set VERB(newpw5)  "found Re-enter $OPTS(user)'s new password: sending $OPTS(npasswd)\n"
+  set VERB(newpw6)  "found Re-enter new Password: sending $OPTS(npasswd)\n"
+  set VERB(newpw7)  "found New UNIX password: Sending $OPTS(npasswd)\n"
+  set VERB(newpw8)  "found Retype new UNIX password: Sending $OPTS(npasswd)\n"
+  set VERB(newpw9)  "found second New UNIX password: Sending $OPTS(npasswd)\n"
+  set VERB(newpw10) "found second Retype new UNIX password: Sending $OPTS(npasswd)\n"
+  set VERB(newpw11) "found Retype new password: sending $OPTS(npasswd)\n"
+  set VERB(newpw12) "found second New password: sending $OPTS(npasswd)\n"
+  set VERB(newpw13) "found second Retype new password: sending $OPTS(npasswd)\n"
+  set VERB(newpw14) "found New Password: sending $OPTS(npasswd)\n"
+  set VERB(newpw15) "found Re-enter new password: sending $OPTS(npasswd)\n"
+  set VERB(pick1)   "found Enter choice here: sending p for pick\n"
+  set VERB(pick2)   "found Select ONE item by number: sending 4 for pick\n"
+  set VERB(sorry)   "found Sorry. Invalid old password.\n"
+
+  set VERB(done1)   "got a prompt, time to go\n"
+  set VERB(done2)   "got a prompt, all done\n"
+  set VERB(deny)    "found Permission denied, please try again. Bailing\n"
+}
+
+if {$OPTS(debug) == "on"} {
+  set DEB(debug1)  "Reached if block\n"
+  set DEB(debug2)  "Sent passwd command\n"
+  set DEB(debug3)  "In SUN Password Change #1\n"
+  set DEB(debug4)  "In SUN Password Change #2\n"
+  set DEB(debug5)  "In AIX/HP-UX Password Change #1\n"
+  set DEB(debug6)  "In AIX Password Change #2\n"
+  set DEB(debug7)  "In Linux Password Change #1\n"
+  set DEB(debug8)  "In Linux Password Change #2\n"
+  set DEB(debug9)  "At Exit statement\n"
+  set DEB(debug10) ""
+  set DEB(debug11) ""
+  set DEB(debug12) ""
+  set DEB(debug13) ""
+  set DEB(debug14) ""
+  set DEB(debug15) ""
+  set DEB(debug16) ""
+}
+
+proc timedout {{msg {none}}} {
+  send_user "Timed out (reason: $msg)\n"
+  if {[info exists ::expect_out]} {
+    parray ::expect_out
+  }
+  exit 1
+}
+
+set pid [spawn ssh $OPTS(user)@$OPTS(host)]
+
+set id $spawn_id
+
+# RSA key prompt:
+#The authenticity of host 'bldintg02 (9.17.182.195)' can't be established.
+#RSA key fingerprint is [key]
+#Are you sure you want to continue connecting (yes/no)? yes
+#Warning: Permanently added 'bldintg02,9.17.182.195' (RSA) to the list of known hosts.
+
+# Initial login password prompts:
+# Sun
+#  Password:
+#  user@host's password:
+#
+# AIX
+#  user@host's password:
+#
+# Linux
+#  user@host's password:
+#
+
+# Change password at initial login prompts:
+# Sun
+#  New Password:
+#  Re-enter new Password:
+#  sshd: password successfully changed for [user]
+#  $
+#
+#  New password:
+#  Re-enter new password:
+#  sshd: password successfully changed for [user]
+#  $
+#
+# AIX (two possible prompts; first leaves you at $ prompt, second logs you out
+#  Old password:
+#  New password:
+#  Enter the new password again:
+#  $
+#
+#  user's Old password:
+#  user's New password:
+#  Re-enter user's new password:
+#  Connection to host closed.
+#
+# Linux
+#  (current) UNIX password:
+#  New UNIX password:
+#  Retype new UNIX password:
+#  $
+#
+# on some linux systems, a second set of new password prompts are presented
+#  New UNIX password:
+#  Retype new UNIX password:
+#  $
+#
+# on some linux systems, you could also be automatically logged out
+#  all authentication tokens updated successfully
+#
+# on some linux systems, a different "New password" prompt is presented
+#  (current) UNIX password:
+#  New password:
+#  Retype new password:
+#  $
+#
+# on some linux systems, a second set of new password prompts are presented
+#  New password:
+#  Retype new password:
+#  $
+#
+# and even better, on some linux systems, a second set of new UNIX password prompts are presented
+#  New UNIX password:
+#  Retype new UNIX password:
+#  $
+#
+# more new stuff
+# bunch of text
+# Enter new password:
+# Re-type new password: 
+#
+
+# AIX:startsm$ ./passwd.do
+# waiting...
+# At the RSA key fingerprint prompt
+# waiting...
+# Timed out (reason: in while loop)
+# ::expect_out(0,string) = continue connecting (yes/no)?
+# ::expect_out(buffer)   = The authenticity of host 'rmspdb01 (10.20.213.111)' can't be established.
+#  . key fingerprint is RSA.
+#  Are you sure you want to continue connecting (yes/no)?
+# ::expect_out(spawn_id) = exp4
+# AIX:startsm$
+# 
+
+set logged_in 0
+while {!$logged_in} {
+  send_user "waiting...\n"
+  expect timeout {
+    timedout "in while loop"
+    break
+  } eof {
+    timedout "spawn failed with eof"
+    break
+  } "continue connecting (yes/no)?" {
+    exp_send -- "yes\r"
+    send_user "$VERB(rsa)"
+    send_user "$expect_out(buffer)"
+#  } "^Password:" {
+  } "Password:" {		# removing the ^ from Password. Suspect output from RSA is stopping processing
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(initpw1)"
+  } "$OPTS(user)@$OPTS(host)'s password:" {
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(initpw2)"
+#    expect -- "Permission denied, please try again." {		# can't leave this on since this expect bypasses all the others
+#      send_user "Invalid password for $OPTS(host). Exiting...\n"
+#      break
+#    }
+  } -- "$OPTS(user)'s Old password:" {	 # Some AIX boxes have an odd password prompt
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw2)"
+    expect -- "$OPTS(user)'s New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw4)"
+      expect -- "Re-enter $OPTS(user)'s new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw5)"
+        expect -- "Connection to $OPTS(host) closed." {
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      } -- "Enter the new password again:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw2)"
+        expect -- "Connection to $OPTS(host) closed." {
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      }
+    }
+  } "Old password:" {			# AIX/HP-UX and FreeBSD Password change
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw1)"
+    expect -- "New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Enter the new password again:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw2)"
+        expect -re $OPTS(prompt) {
+          exp_send -- "exit\r"
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      } -- "Re-enter $OPTS(user)'s new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw3)"
+        expect -- "Connection to $OPTS(host) closed." {
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      } -- "Retype new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw11)"
+        expect -re $OPTS(prompt) {
+          exp_send -- "exit\r"
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      }
+    } "Enter choice here:" {		# HP-UX asking how you want your password generated. P for pick.
+      exp_send -- "p\r"
+      send_user "$VERB(pick1)"
+      expect -- "New password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw1)"
+        expect -- "Re-enter new password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw15)"
+          expect -re $OPTS(prompt) {
+            exp_send -- "exit\r"
+            send_user "===>success, old password changed for $OPTS(host)\n"
+            break
+          }
+        }
+      }
+    } "Select ONE item by number:" {		# OSF asking how you want your password generated. 4 for pick.
+      exp_send -- "4\r"
+      send_user "$VERB(pick2)"
+      expect -- "New password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw1)"
+        expect -- "Re-enter new password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw15)"
+          expect -re $OPTS(prompt) {
+            exp_send -- "exit\r"
+            send_user "===>success, old password changed for $OPTS(host)\n"
+            break
+          }
+        }
+      }
+    } "Sorry." {
+      send_user "$VERB(sorry)"
+      break
+    }
+  } "New Password:" {			# SUN Password change
+    exp_send -- "$OPTS(npasswd)\r"
+    send_user "$VERB(newpw1)"
+    expect -- "Re-enter new Password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw6)"
+      expect -- "sshd: password successfully changed for $OPTS(user)" {
+        exp_send -- "exit\r"
+        send_user "===>success, password changed for $OPTS(host)\n"
+        break
+      }
+    } "The password must contain at least 1 special character(s)." {
+      send_user "The password must contain at least 1 special character(s).\n"
+    } "Passwords must differ by at least 3 positions" {
+      send_user "Passwords must differ by at least 3 positions\n"
+    } "Password too short - must be at least 8 characters." {
+      send_user "Password too short - must be at least 8 characters.\n"
+    } "one numeric or special character." {
+      send_user "The first 8 characters of the password must contain at least two alphabetic characters and at least one numeric or special character.\n"
+    }
+  } "(current) UNIX password:" {		# Linux Password change
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw3)"
+    expect -- "New UNIX password:" {		#	New password start
+      exp_send "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw7)"
+      expect -- "Retype new UNIX password:" {	#	Retype password
+        exp_send "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw8)"
+        expect -re $OPTS(prompt) {		#	prompt? done
+          exp_send "exit\r"
+          send_user "$VERB(done1)"
+          send_user "===>success, password changed for $OPTS(host)\n"
+          break
+        } "New UNIX password:" {		# 	Some systems have two prompts for password changes
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw9)"
+          expect -- "Retype new UNIX password:" {	# retype new password
+          exp_send -- "$OPTS(npasswd)\r"
+            send_user "$VERB(newpw10)"
+            expect -re $OPTS(prompt) {		#	prompt? done
+              exp_send "exit\r"
+              send_user "$VERB(done1)"
+              send_user "===>success, password changed for $OPTS(host)\n"
+              break
+            } "all authentication tokens updated successfully." {
+              send_user "===>success, password changed for $OPTS(host)\n"
+              break
+            }
+          }
+        } "all authentication tokens updated successfully." {
+          send_user "===>success, password changed for $OPTS(host)\n"
+          break
+        }
+      } "BAD PASSWORD: it is based on a dictionary word" {
+        send_user "BAD PASSWORD: it is based on a dictionary word\n"
+        break
+      } "BAD PASSWORD: is too similar to the old one" { 
+        send_user "BAD PASSWORD: is too similar to the old one\n"
+        break
+      }
+    } "New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Retype new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw11)"
+        expect -re $OPTS(prompt) {
+          exp_send "exit\r"
+          send_user "$VERB(done1)"
+          send_user "===>success, password changed for $OPTS(host)\n"
+          break
+        } "New password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw12)"
+          expect -- "Retype new password" {
+            exp_send -- "$OPTS(npasswd)\r"
+            send_user "$VERB(13)"
+            expect -re $OPTS(prompt) {
+              exp_send "exit\r"
+              send_user "$VERB(done1)"
+              send_user "===>success, password changed for $OPTS(host)\n"
+              break
+            }
+          }
+        } "New UNIX password:" {		# Some systems have two prompts for password changes
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw9)"
+          expect -- "Retype new UNIX password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+            send_user "$VERB(newpw10)"
+            expect -re $OPTS(prompt) {
+              exp_send "exit\r"
+              send_user "$VERB(done1)"
+              send_user "===>success, password changed for $OPTS(host)\n"
+              break
+            } "all authentication tokens updated successfully." {
+              send_user "===>success, password changed for $OPTS(host)\n"
+              break
+            }
+          }
+        }
+      } "BAD PASSWORD: it is based on a dictionary word" {
+        send_user "BAD PASSWORD: it is based on a dictionary word\n"
+        break
+      } "BAD PASSWORD: is too similar to the old one" { 
+        send_user "BAD PASSWORD: is too similar to the old one\n"
+        break
+      }
+    } "Enter new password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Re-type new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw11)"
+        expect -re $OPTS(prompt) {
+          exp_send "exit\r"
+          send_user "$VERB(done1)"
+          send_user "===>success, password changed for $OPTS(host)\n"
+          break
+        }
+      } "BAD PASSWORD: it is based on a dictionary word" {
+        send_user "BAD PASSWORD: it is based on a dictionary word\n"
+        break
+      } "BAD PASSWORD: is too similar to the old one" { 
+        send_user "BAD PASSWORD: is too similar to the old one\n"
+        break
+      }
+    } 
+  } -re $OPTS(prompt) {
+    send_user "At login prompt\n"
+    set logged_in 1
+  }
+}
+
+# Change password at prompt after logged in:
+# Sun (two possible prompts)
+#  Enter existing login password:
+#  New Password:
+#  Re-enter new Password:
+#  passwd: password successfully changed for [user]
+#  $
+#
+#  Enter login password:
+#  New password:
+#  Re-enter new password:
+#  passwd (SYSTEM): password successfully changed for [user]
+#  $
+#
+# AIX (two possible prompts; first leaves you at $ prompt, second logs you out
+#  Old password:
+#  New password:
+#  Enter the new password again:
+#  $
+#
+# Linux
+#  (current) UNIX password:
+#  New UNIX password:
+#  Retype new UNIX password:
+#  $
+#
+# on some linux systems, a second set of new password prompts are presented
+#  New UNIX password:
+#  Retype new UNIX password:
+#  $
+#
+# on some linux systems, a different "New password" prompt is presented
+#  (current) UNIX password:
+#  New password:
+#  Retype new password:
+#  $
+#
+# on some linux systems, a second set of new password prompts are presented
+#  New password:
+#  Retype new password:
+#  $
+#
+# and even better, on some linux systems, a second set of new UNIX password prompts are presented
+#  New UNIX password:
+#  Retype new UNIX password:
+#  $
+#
+# and even another linux prompt (can't we all get along?)
+#  Old Password:
+#  New password:
+#  Re-enter new password:
+#  passwd (SYSTEM): password successfully changed for [user]
+#  $
+#
+# The following error occurs at the end. If it's found it means there's probably a /etc/passwd.lock file
+# passwd: Critical error - immediate abort
+#
+# HP-UX passwords now :)
+#  Old password:
+#  New password:
+#  Re-enter new password:
+#  Passwd successfully changed
+#  $
+#
+
+if {$logged_in} {
+  send_user "$DEB(debug1)"
+  exp_send -- "$OPTS(passwd)\r"
+  send_user "$DEB(debug2)"
+  send_user "$expect_out(buffer)"
+
+  expect timeout {
+    timedout "on prompt"
+  } "Enter existing login password:" {			# First password prompt, SUN Password change
+    send_user "$DEB(debug3)"
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw4)"
+
+    expect -- "New Password:" {				# ask for the new password
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw14)"
+
+      expect -- "Re-enter new Password:" {		# get the new password again for verification
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw6)"
+
+        expect -- "passwd: password successfully changed for $OPTS(user)" { 	# successful change
+          send_user "===>success: old password changed for $OPTS(host)\n"
+        }
+     } "The password must contain at least 1 special character(s)." {
+        send_user "The password must contain at least 1 special character(s).\n"
+      }
+    } "The password must contain at least 1 special character(s)." {
+      send_user "The password must contain at least 1 special character(s).\n"
+    } "Passwords must differ by at least 3 positions" {
+      send_user "Passwords must differ by at least 3 positions\n"
+    } "Password too short - must be at least 8 characters." {
+      send_user "Password too short - must be at least 8 characters.\n"
+    } "one numeric or special character." {
+      send_user "The first 8 characters of the password must contain at least two alphabetic characters and at least one numeric or special character.\n"
+    }
+  } "Enter login password:" {				# SUN Password change (second possibility)
+    send_user "$DEB(debug4)"
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw5)"
+    expect -- "New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Re-enter new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw15)"
+        expect -- "password (SYSTEM): successfully changed for $OPTS(user)" {
+          send_user "===>success: old password changed for $OPTS(host)\n"
+
+        } "passwd (SYSTEM): passwd successfully changed for $OPTS(user)" {
+          send_user "===>success: old password changed for $OPTS(host)\n"
+        }
+      }
+    } "passwd(SYSTEM): Sorry, wrong passwd" {
+      send_user "Wrong login password\n"
+    } "The password must contain at least 1 special character(s)." {
+      send_user "The password must contain at least 1 special character(s).\n"
+    } "Passwords must differ by at least 3 positions" {
+      send_user "Passwords must differ by at least 3 positions\n"
+    } "Password too short - must be at least 8 characters." {
+      send_user "Password too short - must be at least 8 characters.\n"
+    } "one numeric or special character." {
+      send_user "The first 8 characters of the password must contain at least two alphabetic characters and at least one numeric or special character.\n"
+    }
+  } "Old password:" {					# AIX/HP-UX and FreeBSD Password change
+    send_user "$DEB(debug5)"
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw1)"
+    expect -- "New password:" {
+      send_user "$VERB(newpw1)"
+      exp_send -- "$OPTS(npasswd)\r"
+      expect -- "Enter the new password again:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw2)"
+        expect -re $OPTS(prompt) {
+          send_user "===>success: old password changed for $OPTS(host)\n"
+        }
+      } "Re-enter new password:" { 			# HP-UX third password prompt, different than AIX
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw15)"
+        expect -- "Passwd successfully changed" {
+          send_user "===>success: old password changed for $OPTS(host)\n"
+        }
+      } -- "Retype new password:" {			# FreeBSD password prompt
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw11)"
+        expect -re $OPTS(prompt) {
+          exp_send -- "exit\r"
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      }
+    } "Your entry does not match the old password." {
+      send_user "failure: Your entry does not match the old password.\n"
+    } "Sorry." {
+      send_user "$VERB(sorry)"
+    } "Enter choice here:" {		# HP-UX asking how you want your password generated. P for pick.
+      exp_send -- "p\r"
+      send_user "$VERB(pick1)"
+      expect -- "New password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw1)"
+        expect -- "Re-enter new password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw3)"
+          expect -re $OPTS(prompt) {
+            exp_send -- "exit\r"
+            send_user "===>success, old password changed for $OPTS(host)\n"
+            break
+          }
+        }
+      }
+    } "Select ONE item by number:" {		# OSF asking how you want your password generated. 4 for pick.
+      exp_send -- "4\r"
+      send_user "$VERB(pick2)"
+      expect -- "New password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw1)"
+        expect -- "Re-enter new password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw15)"
+          expect -re $OPTS(prompt) {
+            exp_send -- "exit\r"
+            send_user "===>success, old password changed for $OPTS(host)\n"
+            break
+          }
+        }
+      }
+    }
+  } "$OPTS(user)'s Old password:" {			# Second possibility for AIX Password change
+    send_user "$DEB(debug6)"
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw2)"
+    expect -- "$OPTS(user)'s New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw4)"
+      expect -- "Re-enter $OPTS(user)'s new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw5)"
+        expect -- "Connection to $OPTS(host) closed." {
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      } "Enter the new password again:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw2)"
+        expect -- "Connection to $OPTS(host) closed." {
+          send_user "===>success, old password changed for $OPTS(host)\n"
+          break
+        }
+      }
+    }
+  } "(current) UNIX password:" {			# Linux Password change
+    send_user "$DEB(debug7)"
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw3)"
+    expect -- "New UNIX password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw7)"
+      expect -- "Retype new UNIX password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw8)"
+        expect -re $OPTS(prompt) {
+          send_user "$VERB(done2)"
+          send_user "===>success, password changed for $OPTS(host)\n"
+        } "New UNIX password:" {                # Some systems have two prompts for password changes
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw9)"
+          expect -- "Retype new UNIX password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+            send_user "$VERB(newpw10)"
+            expect -re $OPTS(prompt) {
+              send_user "$VERB(done2)"
+              send_user "===>success, password changed for $OPTS(host)\n"
+            } "passwd: Critical error - immediate abort" {
+              send_user "Error: /etc/passwd.lock may exist"
+            }
+          }
+        } "passwd: Critical error - immediate abort" {
+          send_user "Error: /etc/passwd.lock may exist"
+        }
+      } "BAD PASSWORD: is too simple" {
+        send_user "BAD PASSWORD: is too simple\n"
+      } "BAD PASSWORD: it is based on a dictionary word" {
+        send_user "BAD PASSWORD: it is based on a dictionary word\n"
+      } "BAD PASSWORD: is too similar to the old one" { 
+        send_user "BAD PASSWORD: is too similar to the old one\n"
+      }
+    } "New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Retype new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw11)"
+        expect -re $OPTS(prompt) {
+          send_user "$VERB(done2)"
+          send_user "===>success, password changed for $OPTS(host)\n"
+        } "New password:" {				# Second Linux Password prompts
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw12)"
+          expect -- "Retype new password:" {
+            exp_send -- "$OPTS(npasswd)\r"
+            send_user "$VERB(newpw13)"
+            expect -- "passwd: all authentication tokens updated successfully." {
+              send_user "===>success: old password changed for $OPTS(host)\n"
+            }
+          }
+        } "New UNIX password:" {                # Some systems have two prompts for password changes
+          exp_send -- "$OPTS(npasswd)\r"
+          send_user "$VERB(newpw9)"
+          expect -- "Retype new UNIX password:" {
+          exp_send -- "$OPTS(npasswd)\r"
+            send_user "$VERB(newpw10)"
+            expect -re $OPTS(prompt) {
+              send_user "$VERB(done2)"
+              send_user "===>success, password changed for $OPTS(host)\n"
+            }
+          }
+        }
+      } "BAD PASSWORD: it is based on a dictionary word" {
+        send_user "BAD PASSWORD: it is based on a dictionary word\n"
+      } "BAD PASSWORD: is too similar to the old one" { 
+        send_user "BAD PASSWORD: is too similar to the old one\n"
+      }
+    } "Enter new password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Re-type new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw11)"
+        expect -re $OPTS(prompt) {
+          exp_send "exit\r"
+          send_user "$VERB(done1)"
+          send_user "===>success, password changed for $OPTS(host)\n"
+          break    
+        }
+      } "BAD PASSWORD: it is based on a dictionary word" {
+        send_user "BAD PASSWORD: it is based on a dictionary word\n"
+        break
+      } "BAD PASSWORD: is too similar to the old one" {
+        send_user "BAD PASSWORD: is too similar to the old one\n"
+        break
+      }
+    }
+  } "Old Password:" {				# new linux prompts
+    send_user "$DEB(debug8)"
+    exp_send -- "$OPTS(opasswd)\r"
+    send_user "$VERB(oldpw6)"
+    expect -- "New password:" {
+      exp_send -- "$OPTS(npasswd)\r"
+      send_user "$VERB(newpw1)"
+      expect -- "Re-enter new password:" {
+        exp_send -- "$OPTS(npasswd)\r"
+        send_user "$VERB(newpw15)"
+        expect -- "Password changed" {
+          send_user "===>success, password changed for $OPTS(host)\n"
+          expect -re $OPTS(prompt) {
+            send_user "$VERB(done2)"
+          }
+        }
+      }
+    }
+  }
+
+  send_user "$DEB(debug9)"
+  exp_send -- "exit\r"
+}
+
+exp_close -i $id
+
+exp_wait -i $id
+

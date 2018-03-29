@@ -1,0 +1,133 @@
+#!/bin/ksh
+
+ADMIN=/usr/local/admin
+HTML=/usr/local/httpd/htsecure/reports/ovgetconf.php
+
+if [[ ! -z $1 ]]
+then
+  echo "Skipping scp..."
+  SKIP='yes'
+else
+  echo "Retrieving ovconfget..."
+  SKIP='no'
+fi
+
+echo "<?php
+# Script: ovgetconf.php
+# Owner: Carl Schelin
+# Coding Standard 3.0 Applied
+# See: https://incowk01/makers/index.php/Coding_Standards
+# Description:
+
+  include('settings.php');
+  include(\$Sitepath . '/guest.php');
+
+  \$package = "ovgetconf.php";
+
+  logaccess(\$formVars['username'], \$package, \"Accessing the script.\");
+
+?>
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
+<title>Openview Configuration Settings</title>
+
+<style type=\"text/css\" title=\"currentStyle\" media=\"screen\">
+<?php include(\$Sitepath . \"/mobile.php\"); ?>
+</style>
+
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/jquery.js\"></script>
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>
+<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>
+
+</head>
+<body class=\"ui-widget-content\">
+
+<?php include(\$Sitepath . '/topmenu.start.php'); ?>
+<?php include(\$Sitepath . '/topmenu.end.php'); ?>
+
+<div class=\"main\">
+
+<table class=\"ui-styled-table\">
+<tr>
+  <th class=\"ui-state-default\">Openview ovconfget</th>
+  <th class=\"ui-state-default\" width=\"20\"><a href=\"javascript:;\" onmousedown=\"toggleDiv('help');\">Help</a></th>
+</tr>
+</table>
+
+<div id=\"help\" style=\"display:none\">
+
+<div class=\"main-help ui-widget-content\">
+
+<h2>ovconfget</h2>
+
+<p>This reports on the variables that should be set and what their values are. Compare the Server Bind Addr with the Client Bind Addr. They should be the same. For the server names, just the shortname is displayed.
+It's assumed the fqdn is actually configured. Click on the server name to see the actual output of ovconfget.</p>
+
+</div>
+
+</div>
+
+
+<table class=\"ui-styled-table\">
+<tr>
+</tr>
+<tr>
+  <th class=\"ui-state-default\">Server</th>
+  <th class=\"ui-state-default\">Agent Version</th>
+  <th class=\"ui-state-default\">OPC Installation Time</th>
+  <th class=\"ui-state-default\">Last Cert Update</th>
+  <th class=\"ui-state-default\">Server Bind Addr</th>
+  <th class=\"ui-state-default\">Client Bind Addr</th>
+  <th class=\"ui-state-default\">OPC IP Address</th>
+  <th class=\"ui-state-default\">OPC Mgmt Server</th>
+  <th class=\"ui-state-default\">OPC Nodename</th>
+  <th class=\"ui-state-default\">OPC Primary Mgr</th>
+  <th class=\"ui-state-default\">Certificate Server</th>
+</tr>" > $HTML
+
+for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+do
+
+  if [[ $SKIP = 'no' ]]
+  then
+    if [[ -f $ADMIN/servers/$i/getovconf.output ]]
+    then
+      rm $ADMIN/servers/$i/getovconf.output
+    fi
+    scp $i:/opt/intrado/etc/getovconf.output $ADMIN/servers/$i/
+  fi
+
+  GETOVCONF="$ADMIN/servers/$i/getovconf.output"
+  if [[ -f ${GETOVCONF} ]]
+  then
+    echo "<tr>" >> $HTML
+    echo "  <td class=\"ui-widget-content\"><a href=\"https://incojs01.scc911.com/servers/$i/getovconf.output\" target=\"_blank\">$i</a></td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_INSTALLED_VERSION/{print $2}' $GETOVCONF`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_INSTALLATION_TIME/{print $2}' $GETOVCONF`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/LAST_CERT_UPDATE/{print $2}' $GETOVCONF`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/SERVER_BIND_ADDR/{print $2}' $GETOVCONF | sed -e "s/localhost//g"`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/CLIENT_BIND_ADDR/{print $2}' $GETOVCONF`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_IP_ADDRESS/{print $2}' $GETOVCONF`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_MGMT_SERVER/{print $2}' $GETOVCONF | cut -f1 -d.`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_NODENAME/{print $2}' $GETOVCONF | cut -f1 -d.`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_PRIMARY_MGR/{print $2}' $GETOVCONF | cut -f1 -d.`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`awk -F= '/CERTIFICATE_SERVER/{print $2}' $GETOVCONF | cut -f1 -d.`</td>" >> $HTML
+    echo "</tr>" >> $HTML
+
+    chown unixsvc:sysadmin $GETOVCONF
+    chmod 644 $GETOVCONF
+  fi
+done
+
+echo "</table>
+
+</div>
+
+<?php include(\$Sitepath . '/footer.php'); ?>
+
+</body>
+</html>" >> $HTML
+

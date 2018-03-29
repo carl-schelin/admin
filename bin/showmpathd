@@ -1,0 +1,119 @@
+#!/bin/ksh
+
+# showmpathd
+#    prints the web page report
+
+ADMIN=/usr/local/admin
+BGCOLOR="CCCCCC"
+PHP=/usr/local/httpd/htsecure/reports/mpathd.php
+
+echo "<?php" > $PHP
+echo "  include('../login/check.php');" >> $PHP
+echo "  check_login('3');" >> $PHP
+echo "?>" >> $PHP
+echo "<html>" >> $PHP
+echo "<head>" >> $PHP
+echo "<title>SunOS mpathd Configurations</title>" >> $PHP
+echo "</head>" >> $PHP
+echo "<body>" >> $PHP
+echo "" >> $PHP
+echo "<h3 align=center>Solaris Settings</h3>" >> $PHP
+echo "" >> $PHP
+echo "<table>" >> $PHP
+echo "<tr>" >> $PHP
+echo "  <th>&nbsp;</th>" >> $PHP
+echo "  <th colspan=3><font size=\"-2\">IPMP Settings</font></th>" >> $PHP
+echo "</tr>" >> $PHP
+echo "<tr>" >> $PHP
+
+##
+##pragma ident   "@(#)mpathd.dfl 1.2     00/07/17 SMI"
+##
+## Time taken by mpathd to detect a NIC failure in ms. The minimum time
+## that can be specified is 100 ms.
+## 
+#FAILURE_DETECTION_TIME=2500
+##
+## Failback is enabled by default. To disable failback turn off this option
+##
+#FAILBACK=yes
+##
+## By default only interfaces configured as part of multipathing groups 
+## are tracked. Turn off this option to track all network interfaces 
+## on the system
+##
+#TRACK_INTERFACES_ONLY_WITH_GROUPS=yes
+
+echo "  <th><font bgcolor=$BGCOLOR size=\"-2\">Server</font></th>" >> $PHP
+echo "  <th title=\"Time in ms to detect a NIC failure. Min:100 ms Default:10000 ms\"><font bgcolor=$BGCOLOR size=\"-2\">Failure Detection Time</font></th>" >> $PHP
+echo "  <th title=\"Failback to original interface when available again.\"><font bgcolor=$BGCOLOR size=\"-2\">Failback</font></th>" >> $PHP
+echo "  <th title=\"Only track interfaces in an IPMP group.\"><font bgcolor=$BGCOLOR size=\"-2\">Track Interfaces Only With Groups</font></th>" >> $PHP
+echo "</tr>" >> $PHP
+
+for i in `grep -v "^#" $ADMIN/etc/servers | grep SunOS`
+do
+  SERVER=`echo $i | cut -f1 -d:`
+
+  if [[ $BGCOLOR = "EEEEEE" ]]
+  then
+    BGCOLOR="CCCCCC"
+  else 
+    BGCOLOR="EEEEEE"
+  fi
+
+  if [[ ! -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  then
+    echo "<tr bgcolor=$BGCOLOR>" >> $PHP
+    echo "  <td><font bgcolor=$BGCOLOR size="-2" color=red>$SERVER</font></td>" >> $PHP
+  else
+    echo "<tr bgcolor=$BGCOLOR>" >> $PHP
+    echo "  <td><font bgcolor=$BGCOLOR size="-2" color=black>$SERVER</font></td>" >> $PHP
+  fi
+
+  PRE="red"
+  VAL1=""
+  TITLE='title="10000"'
+  if [[ -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  then
+    VAL1=`/bin/grep "^FAILURE_DETECTION_TIME" $ADMIN/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
+  fi
+  if [[ "$VAL1" = "10000" ]]
+  then
+    PRE="green"
+  fi
+  echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL1</font></td>" >> $PHP
+
+  PRE="red"
+  VAL1=""
+  TITLE='title="yes"'
+  if [[ -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  then
+    VAL1=`/bin/grep "^FAILBACK" $ADMIN/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
+  fi
+  if [[ "$VAL1" = "yes" ]]
+  then
+    PRE="green"
+  fi
+  echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL1</font></td>" >> $PHP
+
+  PRE="red"
+  VAL1=""
+  TITLE='title="yes"'
+  if [[ -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  then
+    VAL1=`/bin/grep "^TRACK_INTERFACES_ONLY_WITH_GROUP" $ADMIN/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
+  fi
+  if [[ "$VAL1" = "yes" ]]
+  then
+    PRE="green"
+  fi
+  echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL1</font></td>" >> $PHP
+
+  echo "</tr>" >> $PHP
+
+done
+
+echo "</table>" >> $PHP
+echo "" >> $PHP
+echo "</body>" >> $PHP
+echo "</html>" >> $PHP

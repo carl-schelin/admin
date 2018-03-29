@@ -1,0 +1,30 @@
+#!/bin/ksh
+
+DATE=`date`
+LOC=/usr/local/admin
+PHP=/usr/local/httpd/htsecure/reports/defunct.php
+
+echo "<?php" > $PHP
+echo "  include('../login/check.php');" >> $PHP
+echo "  check_login('3');" >> $PHP
+echo "?>" >> $PHP
+echo "<html>" >> $PHP
+echo "<head>" >> $PHP
+echo "<title>Defunct Processes</title>" >> $PHP
+echo "<h3 align=center>Defunct Processes</h3>" >> $PHP
+echo "<h4 align=center>$DATE</h4>" >> $PHP
+echo "</head>" >> $PHP
+echo "<body>" >> $PHP
+
+for i in `grep -v "^#" $LOC/etc/servers | cut -f1 -d:`
+do
+  if [[ -f $LOC/servers/$i/defunct.data ]]
+  then
+    echo "<p><b>$i</b><pre>" >> $PHP
+    cat $LOC/servers/$i/defunct.data >> $PHP
+    echo "</pre></p>" >> $PHP
+  fi
+done
+
+echo "</body>" >> $PHP
+echo "</html>" >> $PHP

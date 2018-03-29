@@ -1,0 +1,51 @@
+#!/bin/ksh
+
+# Carl Schelin
+# simple script that takes all the chksys.good files and imports the data into the database.
+# the 'chksys' script in the servers directory does a piecemeal import, only importing if there are changes. 
+# this script imports every server's data and is intended to be run once a week.
+# with this, we can also check older entries and remove them if needed.
+#
+# 2016-02-04 - changing to import the chksys.import files. The data is stable and no reason to wait for a manual input
+
+ADMIN=/usr/local/admin
+RUNBY=`/usr/xpg4/bin/id -u`
+WHOCARES=carl.schelin@intrado.com
+WHOCARES=unixadmins@intrado.com
+LOG=$ADMIN/logs/chksys.log
+ERRORS=$ADMIN/logs/chksys.errors
+
+if [[ $RUNBY != 5000 ]]
+then
+  echo "Script must be run by unixsvc Service account."
+  exit 1
+fi
+
+if [[ -f $ADMIN/logs/chksys.log ]]
+then
+  rm $ADMIN/logs/chksys.log
+fi
+
+for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+do
+  if [[ -f $ADMIN/servers/$i/chksys.import ]]
+  then
+    echo "$i"
+    $ADMIN/bin/import.php $ADMIN/servers/$i/chksys.import >> $LOG
+  else
+    echo "$i!"
+    echo "Missing chksys.import: $i" >> $LOG
+  fi
+done
+
+#OUTPUT=`egrep "(Sorry: Unable to locate|Skipping|ERROR)" $LOG`
+#egrep "(Sorry: Unable to locate|Skipping|ERROR)" $LOG | sort > $ERRORS
+
+OUTPUT=`egrep -v "(uuid|system|filesystem|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found "`
+egrep -v "(uuid|system|filesystem|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found " | sort > $ERRORS
+
+if [[ ! -z $OUTPUT ]]
+then
+  cat $ERRORS | mailx -s "chksys Import Issues" $WHOCARES
+fi
+

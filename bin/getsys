@@ -1,0 +1,108 @@
+#!/bin/ksh
+
+# getsys - Retrieve the.import for system files
+# Owner: Carl Schelin
+
+PROGNAME="getsys"
+LOC=/usr/local/admin
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=80
+
+# Content here: scp the config file from here
+
+  CONTENT="chksys"
+
+  if [ -f $SVRPATH/$CONTENT.import ]
+  then
+    rm $SVRPATH/$CONTENT.import
+  fi
+
+  /usr/bin/scp $SERVER:/opt/intrado/etc/$CONTENT.import $SVRPATH 2>&1 &
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+# if there's no.import, delete the 0 byte file
+
+#  if [ ! -s $SVRPATH/$CONTENT.import ]
+#  then
+#    rm $SVRPATH/$CONTENT.import
+#  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.import ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.import
+  fi
+
+# compare the "good" content with the currently captured.import.
+
+  if [[ -f $SVRPATH/$CONTENT.import ]]
+  then
+    if [[ -f $SVRPATH/$CONTENT.good ]]
+    then
+      /usr/bin/diff $SVRPATH/$CONTENT.import $SVRPATH/$CONTENT.good > $SVRPATH/$CONTENT.diff
+#      if [[ -s $SVRPATH/$CONTENT.diff ]]
+#      then
+#        echo "ERROR: $CONTENT differences. Check server." >> $SVRPATH/config.status
+#        echo "ERROR: $CONTENT differences. Check server." >> $SVRPATH/morning.status
+#      fi
+    else
+      echo "ERROR: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/config.status
+      echo "ERROR: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/morning.status
+    fi
+  else
+    echo "ERROR: $SVRPATH/$CONTENT.import file not found." >> $SVRPATH/config.status
+    echo "ERROR: $SVRPATH/$CONTENT.import file not found." >> $SVRPATH/morning.status
+  fi
+
+done
+
+exit 0
+

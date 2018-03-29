@@ -1,0 +1,31 @@
+#!/bin/ksh
+
+DATE=`date`
+LOC=/usr/local/admin
+PHP=/usr/local/httpd/htsecure/reports/ntp.php
+
+echo "<?php" > $PHP
+echo "  include('../login/check.php');" >> $PHP
+echo "  check_login('3');" >> $PHP
+echo "?>" >> $PHP
+echo "<html>" >> $PHP
+echo "<head>" >> $PHP
+echo "<title>NTP Settings</title>" >> $PHP
+echo "</head>" >> $PHP
+echo "<body>" >> $PHP
+echo "<h3 align=center>NTP Settings</h3>" >> $PHP
+echo "<h4 align=center>$DATE</h4>" >> $PHP
+
+for i in `grep -v "^#" $LOC/etc/servers | cut -f1 -d:`
+do
+  echo "<p><b>$i</b>" >> $PHP
+  if [[ -f $LOC/servers/$i/ntpq.output ]]
+  then
+    echo "<pre>" >> $PHP
+    cat $LOC/servers/$i/ntpq.output >> $PHP
+    echo "</pre></p>" >> $PHP
+  fi
+done
+
+echo "</body>" >> $PHP
+echo "</html>" >> $PHP

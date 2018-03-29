@@ -1,0 +1,58 @@
+#!/bin/ksh
+
+# this script checks the various systems for disk space issues on DBA owned systems.
+
+WHOCARES="carl.schelin@intrado.com"
+WHOCARES="DBAGroup@intrado.com,oracle-apps@datavail.com"
+LOC=/usr/local/admin
+LOG="$LOC/output/status.dba"
+SEND="0"
+TODAY=`date +"%w"`
+
+if [ -f $LOG ]
+then
+  rm $LOG
+fi
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ -f $SVRPATH/config.dba.status ]
+  then
+    echo $SERVER >> $LOG
+    echo "============" >> $LOG
+    grep "ERROR" $SVRPATH/config.dba.status >> $LOG
+    grep "WARNING" $SVRPATH/config.dba.status >> $LOG
+    echo "" >> $LOG
+    rm $SVRPATH/config.dba.status
+  fi
+
+done
+
+if [[ ! -z "$WHOCARES" ]]
+then
+  OUTPUT=`grep "ERROR" $LOG`
+  if [ ! -z "$OUTPUT" ]
+  then
+    SUBJECT="$MAIL Status Report: Errors Found"
+  else
+    OUTPUT=`grep "WARNING" $LOG`
+    if [ ! -z "$OUTPUT" ]
+    then
+      SUBJECT="$MAIL Status Report: Warnings Found"
+    else
+      SUBJECT="$MAIL Status Report: All is well"
+    fi
+  fi
+
+  for i in $SEND
+  do
+    if [[ $SEND -eq $TODAY ]]
+    then
+      cat $LOG | mailx -s "$SUBJECT" $WHOCARES
+    fi
+  done
+fi
+

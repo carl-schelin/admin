@@ -1,0 +1,196 @@
+#!/bin/ksh
+
+# showstack
+#    prints the web page report
+
+ADMIN=/usr/local/admin
+BGCOLOR="CCCCCC"
+PHP=/usr/local/httpd/htsecure/reports/linuxstack.php
+
+echo "<?php" > $PHP
+echo "  include('settings.php'); >> $PHP
+echo "  include($Sitepath . '/login/check.php'); >> $PHP
+echo "  check_login('3');" >> $PHP
+echo "?>" >> $PHP
+echo "<html>" >> $PHP
+echo "<head>" >> $PHP
+echo "<title>Linux</title>" >> $PHP
+echo "</head>" >> $PHP
+echo "<body>" >> $PHP
+echo "" >> $PHP
+echo "<h3 align=center>Linux Settings</h3>" >> $PHP
+echo "" >> $PHP
+echo "<table>" >> $PHP
+echo "<tr>" >> $PHP
+echo "  <th>&nbsp;</th>" >> $PHP
+echo "  <th colspan=12><font size=\"-2\">Recommended Security Settings</font></th>" >> $PHP
+echo "</tr>" >> $PHP
+echo "<tr>" >> $PHP
+echo "  <th><font bgcolor=$BGCOLOR size=\"-2\">Server</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP broadcast echo activity\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 icmp echo ignore broadcasts</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all accept redirects</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv6 conf all accept redirects</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all send redirects</font></th>" >> $PHP
+echo "  <th title=\"Disable ICMP routing redirects\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv6 conf all send redirects</font></th>" >> $PHP
+echo "  <th title=\"Disable IP source routing\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all accept source route</font></th>" >> $PHP
+echo "  <th title=\"Disable IP source routing\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all forwarding</font></th>" >> $PHP
+echo "  <th title=\"Disable IP source routing\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all mc forwarding</font></th>" >> $PHP
+echo "  <th title=\"Enforce sanity checking\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all rp filter</font></th>" >> $PHP
+echo "  <th title=\"Log and drop Martian packets\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 conf all log martians</font></th>" >> $PHP
+echo "  <th title=\"Make system resistant to SYN Flood attacks\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 tcp max syn backlog</font></th>" >> $PHP
+echo "  <th title=\"Make system resistant to SYN Flood attacks\"><font bgcolor=$BGCOLOR size=\"-2\">net ipv4 tcp syncookies</font></th>" >> $PHP
+echo "</tr>" >> $PHP
+
+for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux`
+do
+  SERVER=`echo $i | cut -f1 -d:`
+
+  if [[ $BGCOLOR = "EEEEEE" ]]
+  then
+    BGCOLOR="CCCCCC"
+  else
+    BGCOLOR="EEEEEE"
+  fi
+    
+  echo "<tr bgcolor=$BGCOLOR>" >> $PHP
+  if [[ ! -f $ADMIN/servers/$SERVER/chkstack.output ]]
+  then
+    echo "  <td><font bgcolor=$BGCOLOR size="-2" color=red>$SERVER</font></td>" >> $PHP
+  else
+    echo "  <td><font bgcolor=$BGCOLOR size="-2" color=black>$SERVER</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL1=`/bin/grep "^net.ipv4.icmp_echo_ignore_broadcasts " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL1" = "" ]]
+    then
+      PRE="green"
+      VAL1="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL1</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL2=`/bin/grep "^net.ipv4.conf.all.accept_redirects " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL2" = "" ]]
+    then
+      PRE="green"
+      VAL2="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL2</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL3=`/bin/grep "^net.ipv6.conf.all.accept_redirects " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL3" = "" ]]
+    then
+      PRE="green"
+      VAL3="0"
+    fi
+    if [[ "$VAL3" = "net.ipv6.conf.all.accept_redirects" ]]
+    then
+      VAL3="N/A"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL3</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL4=`/bin/grep "^net.ipv4.conf.all.send_redirects " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL4" = "" ]]
+    then
+      PRE="green"
+      VAL4="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL4</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL5=`/bin/grep "^net.ipv6.conf.all.send_redirects " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL5" = "" ]]
+    then
+      PRE="green"
+      VAL5="0"
+    fi
+    if [[ "$VAL5" = "net.ipv6.conf.all.send_redirects" ]]
+    then
+      VAL5="N/A"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL5</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL6=`/bin/grep "^net.ipv4.conf.all.accept_source_route " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL6" = "" ]]
+    then
+      PRE="green"
+      VAL6="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL6</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL7=`/bin/grep "^net.ipv4.conf.all.forwarding " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL7" = "" ]]
+    then
+      PRE="green"
+      VAL7="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL7</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="0"'
+    VAL8=`/bin/grep "^net.ipv4.conf.all.mc_forwarding " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL8" = "" ]]
+    then
+      PRE="green"
+      VAL8="0"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL8</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL9=`/bin/grep "^net.ipv4.conf.all.rp_filter " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL9" = "" ]]
+    then
+      PRE="green"
+      VAL9="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL9</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL10=`/bin/grep "^net.ipv4.conf.all.log_martians " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL10" = "" ]]
+    then
+      PRE="green"
+      VAL10="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL10</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1280"'
+    VAL11=`/bin/grep "^net.ipv4.tcp_max_syn_backlog " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL11" = "" ]]
+    then
+      PRE="green"
+      VAL11="1280"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL11</font></td>" >> $PHP
+
+    PRE="red"
+    TITLE='title="1"'
+    VAL12=`/bin/grep "^net.ipv4.tcp_syncookies " $ADMIN/servers/$SERVER/chkstack.output | awk '{print $NF}'`
+    if [[ "$VAL12" = "" ]]
+    then
+      PRE="green"
+      VAL12="1"
+    fi
+    echo "  <td $TITLE><font bgcolor=$BGCOLOR size="-2" color=$PRE>$VAL12</font></td>" >> $PHP
+  fi
+  echo "</tr>" >> $PHP
+done
+
+echo "</table>" >> $PHP
+echo "" >> $PHP
+echo "</body>" >> $PHP
+echo "</html>" >> $PHP

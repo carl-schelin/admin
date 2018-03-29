@@ -1,0 +1,52 @@
+#!/bin/ksh
+
+# this script checks the various systems for disk space issues on Web owned systems.
+
+WHOCARES="james.schroeter@intrado.com"
+LOC=/usr/local/admin
+LOG="$LOC/output/status.webapp"
+touch $LOG
+
+if [ -f $LOG ]
+then
+  rm $LOG
+fi
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ -f "$SVRPATH/config.webapp.status" ]
+  then
+    echo $SERVER >> $LOG
+    echo "============" >> $LOG
+    grep "ERROR" $SVRPATH/config.webapp.status >> $LOG
+    grep "WARNING" $SVRPATH/config.webapp.status >> $LOG
+    echo "" >> $LOG
+    #rm $SVRPATH/config.webapp.status
+  fi
+
+done
+
+if [[ -n "$WHOCARES" && -f "$LOG" ]]
+then
+  OUTPUT=`grep "ERROR" $LOG`
+  if [ -n "$OUTPUT" ]
+  then
+    SUBJECT="WebApp Space Report Errors"
+  else
+    OUTPUT=`grep "WARNING" $LOG`
+    if [ -n "$OUTPUT" ]
+    then
+      SUBJECT="WebApp Space Report Warnings"
+    else
+      SUBJECT="WebApp Status Report: All is well"
+    fi
+  fi
+fi
+
+if [ -n "$OUTPUT" ]
+then
+   cat $LOG | mailx -s "$SUBJECT" $WHOCARES
+fi
