@@ -1,0 +1,64 @@
+#!/bin/ksh
+
+# getmessages
+# retrieve the message files from all servers.
+# with the local chkmessages script, all message files will be located in /var/tmp
+# and called messages.YYYYmmdd
+
+# So pass the three letter code to this script for when to gather data.
+LOC=/usr/local/admin
+
+# write out the date so the logs can be scanned. 
+/usr/bin/perl -e '@T=localtime(time-86400);printf("%04d%02d%02d",$T[5]+1900,$T[4]+1,$T[3])' > $LOC/servers/messages.date
+/usr/bin/perl -e '@T=localtime(time-86400);@M=('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec');printf("%s %2d",$M[$T[4]],$T[3])' > $LOC/servers/messages.scan
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i | cut -f1 -d:`
+  OS=`echo $i | cut -f3 -d:`
+
+  TIMEOUT=80
+
+  echo $SERVER
+
+  if [[ ! -d $LOC/servers/$SERVER ]]
+  then
+    mkdir $LOC/servers/$SERVER
+  fi
+
+  scp $SERVER:/var/tmp/messages.* $LOC/servers/$SERVER/ &
+  PID=$!
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      kill -KILL $PID
+# only if not Tru64 as logging is in a different place
+      if [[ ! $OS = "OSF1" ]]
+      then
+        echo "ERROR Unable to contact $SERVER to retrieve its log files" > $LOC/servers/$SERVER/messages.$DATE
+      fi
+    fi
+  fi
+
+  find $LOC/servers/$SERVER -name messages.\* -atime +30 -exec rm {} \;
+
+done
+

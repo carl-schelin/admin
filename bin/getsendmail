@@ -1,0 +1,203 @@
+#!/bin/ksh
+
+# getsendmail - Retrieve the .cf files from all servers
+# Owner: Carl Schelin
+
+PROGNAME="getsendmail"
+LOC=/usr/local/admin
+
+echo "<?php"
+echo "# Script: sendmail.php"
+echo "# Owner: Carl Schelin"
+echo "# Coding Standard 3.0 Applied"
+echo "# See: https://incowk01/makers/index.php/Coding_Standards"
+echo "# Description:"
+echo ""
+echo "  include('settings.php');"
+echo "  include(\$Sitepath . '/guest.php');"
+echo ""
+echo "  \$package = sendmail.php;"
+echo ""
+echo "  logaccess(\$formVars['username'], \$package, \"Accessing the script.\");"
+echo ""
+echo "?>"
+echo "<!DOCTYPE HTML>"
+echo "<html>"
+echo "<head>"
+echo "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
+echo "<title>Sendmail Configurations</title>"
+echo ""
+echo "<style type=\"text/css\" title=\"currentStyle\" media=\"screen\">"
+echo "<?php include(\$Sitepath . \"/mobile.php\"); ?>"
+echo "</style>"
+echo ""
+echo "<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/jquery.js\"></script>"
+echo "<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>"
+echo "<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">"
+echo "<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>"
+echo ""
+echo "</head>"
+echo "<body class=\"ui-widget-content\">"
+echo ""
+echo "<?php include(\$Sitepath . '/topmenu.start.php'); ?>"
+echo "<?php include(\$Sitepath . '/topmenu.end.php'); ?>"
+echo ""
+echo "<div class=\"main\">"
+echo ""
+echo "<table class="ui-styled-table">"
+echo "<tr>"
+echo "  <th class=\"ui-state-default\">Sendmail Configurations</th>"
+echo "  <th class="ui-state-default" width=\"20\"><a href=\"javascript:;\" onmousedown=\"toggleDiv('help');\">Help</a></th>"
+echo "</tr>"
+echo "</table>"
+echo ""
+echo "<div id=\"help\" style=\"display:none\">"
+echo ""
+echo "<div class=\"main-help ui-widget-content\">"
+echo ""
+echo "<h2>Sendmail/Submit</h2>"
+echo ""
+echo "</div>"
+echo ""
+echo "</div>"
+echo ""
+echo ""
+echo "<table class=\"ui-styled-table\">"
+echo "<tr>"
+echo "</tr>"
+echo "<tr>"
+echo "  <th class=\"ui-state-default\">Server</th>"
+echo "  <th class=\"ui-state-default\">sendmail.cf</th>"
+echo "  <th class=\"ui-state-default\">submit.cf</th>"
+echo "</tr>"
+
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=80
+
+# Content here: scp the config file from here
+
+  CONTENT="*cf"
+
+  /usr/bin/scp $SERVER:/etc/mail/*cf $SVRPATH/ > /dev/null 2>&1 &
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+  echo "<tr>"
+  echo "  <td class=\"ui-widget-content\">$SERVER</td>"
+
+  if [ -f $SVRPATH/sendmail.cf ]
+  then
+
+    if [ -f $SVRPATH/sendmail.cf ]
+    then
+      chmod 664 $SVRPATH/sendmail.cf
+    fi
+
+    SENDMAIL=`grep -v "^#" $SVRPATH/sendmail.cf | grep DS`
+    BRIDGE=`grep -v "^#" $SVRPATH/sendmail.cf | grep bridge`
+
+    if [ ! -z $BRIDGE ]
+    then
+      CLASS="ui-state-error"
+      echo "WARNING: /etc/mail/sendmail.cf still configured with bridgeheads.lgmt.trdo ($PROGNAME)" >> $SVRPATH/config.status
+      echo "WARNING: /etc/mail/sendmail.cf still configured with bridgeheads.lgmt.trdo ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+    else
+      CLASS="ui-widget-content"
+    fi
+
+    echo "  <td class=\"$CLASS\">$SENDMAIL</td>"
+
+  else
+    echo "  <td class=\"ui-widget-content\">No such file</td>"
+  fi
+
+  if [ -f $SVRPATH/submit.cf ]
+  then
+
+    if [ -f $SVRPATH/submit.cf ]
+    then
+      chmod 664 $SVRPATH/submit.cf
+    fi
+
+    SUBMIT=`grep -v "^#" $SVRPATH/submit.cf | grep DS`
+    BRIDGE=`grep -v "^#" $SVRPATH/submit.cf | grep bridge`
+
+    if [ ! -z $BRIDGE ]
+    then
+      CLASS="ui-state-error"
+      echo "WARNING: /etc/mail/submit.cf still configured with bridgeheads.lgmt.trdo ($PROGNAME)" >> $SVRPATH/config.status
+      echo "WARNING: /etc/mail/submit.cf still configured with bridgeheads.lgmt.trdo ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+    else
+      CLASS="ui-widget-content"
+    fi
+
+    echo "  <td class=\"$CLASS\">$SUBMIT</td>"
+
+  else
+    echo "  <td class=\"ui-widget-content\">No such file</td>"
+  fi
+
+  echo "</tr>"
+done
+
+echo "</table>"
+echo ""
+echo "</div>"
+echo ""
+echo "<?php include(\$Sitepath . '/footer.php'); ?>"
+echo ""
+echo "</body>"
+echo "</html>"
+
+exit 0
+

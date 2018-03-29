@@ -1,0 +1,112 @@
+#!/bin/ksh
+
+# getkernel - Retrieve the /etc/sysctl.conf file from linux systems.
+# getkernel - Retrieve the /etc/system file from sun systems.
+# getkernel - Retrieve the /stand/system file from hp-ux systems.
+# Owner: Carl Schelin
+
+PROGNAME="getkernel"
+LOC=/usr/local/admin
+
+for i in `grep -v "^#" $LOC/etc/servers | egrep "(Linux|SunOS|HP-UX)"`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=80
+
+# Content here: scp the config file from here
+  CONTENT=kernel
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  if [[ $OS = 'HP-UX' ]]
+  then
+    /usr/bin/scp $SERVER:/stand/system $SVRPATH/$CONTENT.output 2>&1 &
+    PID=$!
+  fi
+
+  if [[ $OS = 'SunOS' ]]
+  then
+    /usr/bin/scp $SERVER:/etc/system $SVRPATH/$CONTENT.output 2>&1 &
+    PID=$!
+  fi
+
+  if [[ $OS = 'Linux' ]]
+  then
+    /usr/bin/scp $SERVER:/etc/sysctl.conf $SVRPATH/$CONTENT.output 2>&1 &
+    PID=$!
+  fi
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# compare the "good" content with the currently captured.import.
+
+  if [[ -f $SVRPATH/$CONTENT.output ]]
+  then
+    if [[ -f $SVRPATH/$CONTENT.good ]]
+    then
+      /usr/bin/diff $SVRPATH/$CONTENT.output $SVRPATH/$CONTENT.good > $SVRPATH/$CONTENT.diff
+    else
+      echo "ERROR: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/config.status
+      echo "ERROR: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/morning.status
+    fi
+  else
+    echo "ERROR: $SVRPATH/$CONTENT.output file not found." >> $SVRPATH/config.status
+    echo "ERROR: $SVRPATH/$CONTENT.output file not found." >> $SVRPATH/morning.status
+  fi
+
+done
+
+exit 0
+

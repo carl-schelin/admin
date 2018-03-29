@@ -1,0 +1,151 @@
+#!/bin/ksh
+
+# gethostkey - Get the host key for the server
+# Owner: Carl Schelin
+# 
+
+PROGNAME="gethostkey"
+LOC=/usr/local/admin
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  FQDN=`echo $i|cut -f2 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# add the dot for the scp command
+  if [[ ! -z $FQDN ]]
+  then
+    FQDN=".$FQDN"
+  fi
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=180
+
+# Content here: ssh to the server using the hostkey command
+
+  CONTENT="hostkey"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+# we want both host keys; can be 'host,' or 'host '
+  PID=''
+  EXISTS=`egrep -i "^$SERVER(,| )" ~/.ssh/known_hosts`
+  if [[ -z $EXISTS ]]
+  then
+    echo "$SERVER(,| ): No hostkey in known_hosts file; retrieving"
+    echo "[$EXISTS]"
+    $LOC/bin/hostkey -user unixsvc -host $SERVER > $SVRPATH/$CONTENT.output 2>&1 &
+    PID=$!
+  fi
+  EXISTS=`egrep -i "^$SERVER$FQDN(,| )" ~/.ssh/known_hosts`
+  if [[ -z $EXISTS ]]
+  then
+    echo "$SERVER$FQDN(,| ): No hostkey in known_hosts file; retrieving"
+    echo "[$EXISTS]"
+    $LOC/bin/hostkey -user unixsvc -host $SERVER$FQDN >> $SVRPATH/$CONTENT.output 2>&1 &
+    PID=$!
+  fi
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+  if [[ ! $PID = '' ]]
+  then
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+    /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+    /usr/bin/ps -p $PID > /dev/null 2>&1
+    if [[ $? -eq 0 ]]
+    then
+      while [[ $TIMEOUT -gt 0 ]]
+      do
+        /usr/bin/ps -p $PID > /dev/null 2>&1
+        if [[ $? -ne 0 ]]
+        then
+          break
+        fi
+        TIMEOUT=$(($TIMEOUT - 1))
+        sleep 1
+      done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+      if [[ $TIMEOUT -le 0 ]]
+      then
+        echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+        echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+        chmod 664 $SVRPATH/config.status
+        chmod 664 $SVRPATH/morning.status
+        kill -KILL $PID
+      fi
+    fi
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.output ]
+  then
+    if [ -f $SVRPATH/$CONTENT.output ]
+    then
+      rm $SVRPATH/$CONTENT.output
+    fi
+  fi
+ 
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# Checking for the password or timeout responses from hostkey:
+#   Timed out sshing to $OPTS(host)...
+#   Unable to ssh to $OPTS(host)...
+#   Exiting $OPTS(host) at password prompt...
+#   Exiting $OPTS(host) at login prompt...
+
+  if [[ -f $SVRPATH/$CONTENT.output ]]
+  then
+
+    OUTPUT=`grep "password prompt" $SVRPATH/$CONTENT.output`
+    if [[ ! -z $OUTPUT ]]
+    then
+      echo "WARNING: Login to server from unix service account requires a password." >> $SVRPATH/config.status
+      echo "WARNING: Login to server from unix service account requires a password." >> $SVRPATH/morning.status
+      echo "$SERVER Password"
+    fi
+
+    OUTPUT=`grep "sshing to" $SVRPATH/$CONTENT.output`
+    if [[ ! -z $OUTPUT ]]
+    then
+      echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/config.status
+      echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/morning.status
+      echo "$SERVER Timedout"
+    fi
+
+    OUTPUT=`grep "ssh to" $SVRPATH/$CONTENT.output`
+    if [[ ! -z $OUTPUT ]]
+    then
+      echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/config.status
+      echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/morning.status
+      echo "$SERVER Timeout"
+    fi
+  fi
+
+done
+
+exit 0
+

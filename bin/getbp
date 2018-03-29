@@ -1,0 +1,202 @@
+#!/bin/ksh
+
+DATE=`date`
+LOC=/usr/local/admin
+BGCOLOR="blue"
+PHP=/usr/local/httpd/htsecure/reports/bpconf.php
+RUNBY=`/usr/xpg4/bin/id -u`
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+echo "<?php
+# Script: bash.php
+# Owner: Carl Schelin
+# Coding Standard 3.0 Applied
+# See: https://incowk01/makers/index.php/Coding_Standards
+# Description:
+
+  include('settings.php');
+  include(\$Sitepath . '/guest.php');
+
+  \$package = "bash.php";
+
+  logaccess(\$formVars['username'], \$package, \"Accessing the script.\");
+
+?>
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">
+<title>Backup Configuration File</title>
+
+<style type=\"text/css\" title=\"currentStyle\" media=\"screen\">
+<?php include(\$Sitepath . \"/mobile.php\"); ?>
+</style>
+
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/jquery.js\"></script>
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>
+<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>
+<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.js\"></script>
+<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.css\">
+
+</head>
+<body class=\"ui-widget-content\">
+
+<?php include(\$Sitepath . '/topmenu.start.php'); ?>
+<?php include(\$Sitepath . '/topmenu.end.php'); ?>
+
+<div class=\"main\">
+
+<table class=\"ui-styled-table\">
+<tr>
+  <th class=\"ui-state-default\">getbp: `date`</th>
+  <th class=\"ui-state-default\" width=\"20\"><a href=\"javascript:;\" onmousedown=\"toggleDiv('help');\">Help</a></th>
+</tr>
+</table>
+
+<div id=\"help\" style=\"display:none\">
+
+<div class=\"main-help ui-widget-content\">
+
+
+</div>
+
+</div>
+
+
+<table class=\"ui-styled-table\">
+<tr>
+</tr>
+<tr>
+  <th class=\"ui-state-default\">Server</th>
+  <th class=\"ui-state-default\">OS</th>
+  <th class=\"ui-state-default\">ALLOW NON RESERVED PORTS</th>
+  <th class=\"ui-state-default\">CLIENT CONNECT TIMEOUT</th>
+  <th class=\"ui-state-default\">CLIENT NAME</th>
+  <th class=\"ui-state-default\">CLIENT READ TIMEOUT</th>
+  <th class=\"ui-state-default\">CLIENT RESERVED PORT WINDOW</th>
+  <th class=\"ui-state-default\">CONNECT OPTIONS</th>
+  <th class=\"ui-state-default\">DASHBOARD PORT WINDOW</th>
+  <th class=\"ui-state-default\">MEDIA SERVER</th>
+  <th class=\"ui-state-default\">SERVER</th>
+  <th class=\"ui-state-default\">SERVER PORT WINDOW</th>
+  <th class=\"ui-state-default\">SERVER RESERVED PORT WINDOW</th>
+  <th class=\"ui-state-default\">SERVER SENDS MAIL</th>
+  <th class=\"ui-state-default\">VERBOSE</th>
+</tr>" > $PHP
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+
+  SERVER=`echo $i | cut -f1 -d:`
+  OS=`echo $i | cut -f3 -d:`
+
+  echo $SERVER
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=180
+
+# Content here: scp the config file from here
+
+  CONTENT="bp"
+
+  if [ -f $SVRPATH/$CONTENT.conf ]
+  then
+    rm $SVRPATH/$CONTENT.conf
+  fi
+
+  scp $SERVER:/usr/openv/netbackup/bp.conf $SVRPATH/$CONTENT.conf & > /dev/null 2>&1
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      kill -KILL $PID
+    fi
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.conf ]
+  then
+    rm $SVRPATH/$CONTENT.conf
+  fi
+
+  echo "<tr>" >> $PHP
+  echo "  <td class=\"ui-widget-content\">$SERVER</td>" >> $PHP
+  echo "  <td class=\"ui-widget-content\">$OS</td>" >> $PHP
+
+# set the perms as the last step
+
+  if [[ -f $SVRPATH/$CONTENT.conf ]]
+  then
+    chmod 664 $SVRPATH/$CONTENT.conf
+
+    for j in ALLOW_NON_RESERVED_PORTS CLIENT_CONNECT_TIMEOUT CLIENT_NAME CLIENT_READ_TIMEOUT CLIENT_RESERVED_PORT_WINDOW CONNECT_OPTIONS DASHBOARD_PORT_WINDOW MEDIA_SERVER SERVER SERVER_PORT_WINDOW SERVER_RESERVED_PORT_WINDOW SERVER_SENDS_MAIL VERBOSE
+    do
+      OUTPUT=`grep "^$j" $SVRPATH/$CONTENT.conf | awk -F= '{print $2}' | sed -e "s/ /<br>/g"`
+      echo "  <td class=\"ui-widget-content\">$OUTPUT</td>" >> $PHP
+    done
+  else
+    echo "  <td class=\"ui-widget-content\">No backups</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+    echo "  <td class=\"ui-widget-content\">&nbsp;</td>" >> $PHP
+  fi
+
+  echo "</tr>" >> $PHP
+
+done
+
+echo "</table>
+
+</div>
+
+<?php include(\$Sitepath . '/footer.php'); ?>
+
+</body>
+</html>" >> $PHP

@@ -1,0 +1,967 @@
+#!/bin/ksh
+
+# chkstatus - Check the status of errors as reported by the chkserver script
+# Carl Schelin
+
+DEBUG='no'
+ADMIN=/usr/local/admin
+GREP="31m"
+ERROR="Must be corrected due to vulnerability or system stability issue"
+
+usage() {
+  cat << EOF
+chkstatus displays the errors or warnings for all or selected servers
+
+OPTIONS:
+  -h - This help - Default
+  -d - Enable debug mode; only displays errors that haven't been described in the script
+  -t - Type of request:
+      e - Errors - Default
+      w - Warnings
+      b - Both Errors and Warnings
+      g - Good
+      a - All output (includes Good)
+  -i - One server; just report information for a single server
+  -r - All servers in a Project; enclose multi-word searches in quotes
+  -p - All servers in a Product; enclose multi-word searches in quotes
+  -s - Search; enclose multi-word searches in quotes
+EOF
+}
+
+if [[ -z $1 ]]
+then
+  usage
+  exit 1
+fi
+
+if [[ $1 = '-p' ]] && [[ -z $2 ]]
+then
+  echo "List of Products:"
+  for i in `grep -v "^#" $ADMIN/etc/servers | cut -f8 -d: | sort | uniq`
+  do
+    echo "./chkstatus -p $i"
+  done
+  exit 1
+fi
+
+if [[ $1 = '-r' ]] && [[ -z $2 ]]
+then
+  echo "List of Projects:"
+  for i in `grep -v "^#" $ADMIN/etc/servers | cut -f9 -d: | sort | uniq`
+  do
+    echo "./chkstatus -r $i"
+  done
+  exit 1
+fi
+
+while getopts dht:i:r:p:s: optchar
+do
+  case $optchar in
+    d) DEBUG='yes'
+      ;;
+    h) usage
+       exit 1
+      ;;
+    t) case $OPTARG in
+         a) GREP="(31m|32m|33m)"
+            ERROR="(Must be corrected due to vulnerability or system stability issue|Setting should be reviewed and corrected if appropriate|Test or value was successful)"
+            ;;
+         b) GREP="(31m|33m)"
+            ERROR="(Must be corrected due to vulnerability or system stability issue|Setting should be reviewed and corrected if appropriate)"
+            ;;
+         e) GREP="31m"
+            ERROR="Must be corrected due to vulnerability or system stability issue"
+            ;;
+         w) GREP="33m"
+            ERROR="Setting should be reviewed and corrected if appropriate"
+            ;;
+         g) GREP="32m"
+            ERROR="Test or value was successful"
+            ;;
+       esac
+      ;;
+    i) SERVER=$OPTARG
+       ;;
+    r) PROJECT=`echo $OPTARG | sed -e "s/ /_/g"`
+       ;;
+    p) PRODUCT=`echo $OPTARG | sed -e "s/ /_/g"`
+       ;;
+    s) FILTER="(${OPTARG})"
+       ;;
+    *) usage
+       exit 1
+       ;;
+  esac
+done
+
+USER=0
+GROUP=0
+AGENT=0
+FIREWALL=0
+TIME=0
+SUBMGR=0
+CONFIG=0
+KUBE=0
+
+DEBUGFILTER="("
+
+UserText[0]="Users who don't have logins: "
+UserRegx[0]="does not have a login on this system"
+UserText[1]="Users who shouldn't have privileged access: "
+UserRegx[1]="undocumented privileged access"
+UserText[2]="Users who should be locked: "
+UserRegx[2]="and the account isn't locked"
+UserText[3]="Nessus InfoSec account not found: "
+UserRegx[3]="Unable to locate nessus"
+UserText[4]="nessus account expires: "
+UserRegx[4]="Account expires.*nessus"
+UserText[5]="unixsvc account expires: "
+UserRegx[5]="Account expires.*unixsvc"
+UserText[6]="User not present: "
+UserRegx[6]="Unable to locate.*in /etc/passwd"
+UserText[7]="nessus password expires: "
+UserRegx[7]="Password expires.*nessus"
+UserText[8]="opc_op password expires: "
+UserRegx[8]="Password expires.*opc_op"
+UserText[9]="unixsvc password expires: "
+UserRegx[9]="Password expires.*unixsvc"
+UserText[10]="Still set to default password: "
+UserRegx[10]="password is still set to the default"
+UserText[11]="Expired privileged access: "
+UserRegx[11]="access which expired"
+UserText[12]="Service account password must be changed: "
+UserRegx[12]="Password must be changed"
+UserText[13]="oracle password expires: "
+UserRegx[13]="Password expires.*oracle"
+UserText[14]="arad password expires: "
+UserRegx[14]="Password expires.*arad"
+
+Pipe=""
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+do
+  DEBUGFILTER="${DEBUGFILTER}${Pipe}${UserRegx[$i]}"
+  Pipe="|"
+done
+
+# errors
+
+GroupText[0]="Users who should be in sysadmin group: "
+GroupRegx[0]="was not found in the sysadmin"
+GroupText[1]="Users who shouldn't be in sysadmin group: "
+GroupRegx[1]="was found in the sysadmin group"
+GroupText[2]="Users who should be in dbadmins group: "
+GroupRegx[2]="was not found in the dbadmins"
+GroupText[3]="Users who shouldn't be in dbadmins group: "
+GroupRegx[3]="was found in the dbadmins group"
+GroupText[4]="Users who should be in webapps group: "
+GroupRegx[4]="was not found in the webapps"
+GroupText[5]="Users who shouldn't be in webapps group: "
+GroupRegx[5]="was found in the webapps group"
+GroupText[6]="Users who should be in monadmin group: "
+GroupRegx[6]="was not found in the monadmin"
+GroupText[7]="Users who shouldn't be in monadmin group: "
+GroupRegx[7]="was found in the monadmin group"
+GroupText[8]="Users who should be in vnsadmin group: "
+GroupRegx[8]="was not found in the vnsadmin"
+GroupText[9]="Users who shouldn't be in vnsadmin group: "
+GroupRegx[9]="was found in the vnsadmin group"
+GroupText[10]="Users who should be in mobadmin group: "
+GroupRegx[10]="was not found in the mobadmin"
+GroupText[11]="Users who shouldn't be in mobadmin group: "
+GroupRegx[11]="was found in the mobadmin group"
+GroupText[12]="Expected group is not present: "
+GroupRegx[12]="Unable to locate.*in /etc/group"
+GroupText[13]="Non-standard group found: "
+GroupRegx[13]="is a non-standard group"
+GroupText[14]="Users who should be in dbadmin group: "
+GroupRegx[14]="was not found in the dbadmin group"
+GroupText[15]="Users who shouldn't be in dbadmin group: "
+GroupRegx[15]="was found in the dbadmin group"
+GroupText[16]="Users who should be in dba group: "
+GroupRegx[16]="was not found in the dba group"
+GroupText[17]="Users who shouldn't be in dba group: "
+GroupRegx[17]="was found in the dba group"
+GroupText[18]="Users who should be in monadm group: "
+GroupRegx[18]="was not found in the monadm group"
+GroupText[19]="Users who shouldn't be in monadm group: "
+GroupRegx[19]="was found in the monadm group"
+GroupText[20]="Users who should be in uxadmins group: "
+GroupRegx[20]="was not found in the uxadmins group"
+GroupText[21]="Users who shouldn't be in uxadmins group: "
+GroupRegx[21]="was found in the uxadmins group"
+GroupText[22]="Unable to locate group: "
+GroupRegx[22]="Unable to locate.*group"
+GroupText[23]="Unable to locate sudoers group: "
+GroupRegx[23]="Unable to locate %.*in.*/sudoers"
+GroupText[24]="Users who should be in webadmin group: "
+GroupRegx[24]="was not found in the webadmin"
+GroupText[25]="Users who shouldn't be in webadmin group: "
+GroupRegx[25]="was found in the webadmin group"
+GroupText[26]="Users who should be in alimadm group: "
+GroupRegx[26]="was not found in the alimadm"
+GroupText[27]="Users who shouldn't be in alimadm group: "
+GroupRegx[27]="was found in the alimadm group"
+GroupText[28]="Users who should be in fmccro group: "
+GroupRegx[28]="was not found in the fmccro"
+GroupText[29]="Users who shouldn't be in fmccro group: "
+GroupRegx[29]="was found in the fmccro group"
+GroupText[30]="Users who should be in fmccprov group: "
+GroupRegx[30]="was not found in the fmccprov"
+GroupText[31]="Users who shouldn't be in fmccprov group: "
+GroupRegx[31]="was found in the fmccprov group"
+GroupText[32]="Users who should be in fmccadm group: "
+GroupRegx[32]="was not found in the fmccadm"
+GroupText[33]="Users who shouldn't be in fmccadm group: "
+GroupRegx[33]="was found in the fmccadm group"
+GroupText[34]="Users who should be in isuptadm group: "
+GroupRegx[34]="was not found in the isuptadm"
+GroupText[35]="Users who shouldn't be in isuptadm group: "
+GroupRegx[35]="was found in the isuptadm group"
+GroupText[36]="Users who should be in isuptprov group: "
+GroupRegx[36]="was not found in the isuptprov"
+GroupText[37]="Users who shouldn't be in isuptprov group: "
+GroupRegx[37]="was found in the isuptprov group"
+
+# warnings
+GroupText[38]="Sudoers group missing from /etc/group: "
+GroupRegx[38]="sudoers group.*doesn't exist in /etc/group"
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38
+do
+  DEBUGFILTER="${DEBUGFILTER}|${GroupRegx[$i]}"
+done
+
+#errors
+OpenViewText[0]="OpenView installed but not running: "
+OpenViewRegx[0]="OpenView agent is not running"
+OpenViewText[1]="OpenView should be installed but is not: "
+OpenViewRegx[1]="OpenView is not installed"
+OpenViewText[2]="Server has no Openview Certificates: "
+OpenViewRegx[2]="No Certificates found."
+OpenViewText[3]="bbcutil is unable to ping Longmont: "
+OpenViewRegx[3]="bbcutil is unable to ping Longmont"
+OpenViewText[4]="bbcutil is unable to ping Miami:"
+OpenViewRegx[4]="bbcutil is unable to ping Miami"
+OpenViewText[5]="Openview reports Aborted processes:"
+OpenViewRegx[5]="Openview agent is running: Aborted:"
+OpenViewText[6]="Failed to contact Openview servers: "
+OpenViewRegx[6]="Unable to contact Certificate Client."
+OpenViewText[7]="Openview denied certificate request: "
+OpenViewRegx[7]="Certificate request was denied."
+OpenViewText[8]="Openview certificate request is in the queue: "
+OpenViewRegx[8]="Certificate request is pending."
+OpenViewText[9]="Unable to locate server in Inventory listing: "
+OpenViewRegx[9]="Unable to locate.*in chkserver.input file to verify Route Configuration"
+OpenViewText[10]="Misconfigured bbc.http: "
+OpenViewRegx[10]="Configuration: bbc.http.CLIENT_BIND_ADDR=.*is not"
+OpenViewText[11]="Misconfigured bbc.http: "
+OpenViewRegx[11]="Configuration: bbc.http.SERVER_BIND_ADDR=.*is not"
+OpenViewText[12]="Misconfigured eaagt: "
+OpenViewRegx[12]="Configuration: eaagt OPC_IP_ADDRESS=.*is not"
+OpenViewText[13]="Misconfigured eaagt: "
+OpenViewRegx[13]="Configuration: eaagt OPC_MGMT_SERVER=.*is not"
+OpenViewText[14]="Misconfigured eaagt: "
+OpenViewRegx[14]="Configuration: eaagt OPC_PRIMARY_MGR=.*is not"
+OpenViewText[15]="Misconfigured sec.cm.client: "
+OpenViewRegx[15]="Configuration: sec.cm.client CERTIFICATE_SERVER=.*is not"
+OpenViewText[16]="Misconfigured sec.core.auth: "
+OpenViewRegx[16]="Configuration: sec.core.auth MANAGER=.*is not"
+OpenViewText[17]="Misconfigured bbc.cb: "
+OpenViewRegx[17]="Configuration: bbc.cb SERVER_BIND_ADDR=.*is not"
+OpenViewText[18]="Certificate status is blank: "
+OpenViewRegx[18]="Uncaught error:  "
+OpenViewText[19]="Unable to locate server in Inventory listing: "
+OpenViewRegx[19]="Unable to locate.*in chkserver.input file to verify Openview Configuration"
+
+# warnings
+OpenViewText[20]="Management Route is not set: "
+OpenViewRegx[20]="Route to.*missing."
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+do
+  DEBUGFILTER="${DEBUGFILTER}|${OpenViewRegx[$i]}"
+done
+
+
+NetBackupText[0]="NetBackup installed but not running: "
+NetBackupRegx[0]="NetBackup is not running"
+NetBackupText[1]="Backup log file is empty: "
+NetBackupRegx[1]="backups.output is empty"
+NetBackupText[2]="NetBackup should be installed but is not: "
+NetBackupRegx[2]="NetBackup is not installed"
+NetBackupText[3]="NetBackup binary bpcd is not running: "
+NetBackupRegx[3]="NetBackup bpcd is not running"
+NetBackupText[4]="NetBackup binary vnetd is not running: "
+NetBackupRegx[4]="NetBackup vnetd is not running"
+NetBackupText[5]="Last backup was more than 7 days ago: "
+NetBackupRegx[5]="Last backup was more than 7 days ago"
+NetBackupText[6]="/etc/hosts.allow missing servers: "
+NetBackupRegx[6]="is missing from the.*line in /etc/hosts.allow"
+NetBackupText[7]="/etc/hosts.allow missing binaries: "
+NetBackupRegx[7]="is missing from /etc/hosts.allow"
+NetBackupText[8]="No /etc/hosts.allow file: "
+NetBackupRegx[8]="/etc/hosts.allow is missing"
+NetBackupText[9]="Longmont port is not accessible: "
+NetBackupRegx[9]="10.100.6.25:1556 is not accessible"
+NetBackupText[10]="Certificate check, Uncaught error:"
+NetBackupRegx[10]="Uncaught error:"
+NetBackupText[11]="Longmont port is not accessible:"
+NetBackupRegx[11]="10.100.6.25:13724"
+NetBackupText[12]="Longmont port is not accessible:"
+NetBackupRegx[12]="10.32.138.14:1556"
+NetBackupText[13]="Longmont port is not accessible:"
+NetBackupRegx[13]="10.32.138.14:13724"
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13
+do
+  DEBUGFILTER="${DEBUGFILTER}|${NetBackupRegx[$i]}"
+done
+
+
+DataPaletteText[0]="Data Palette installed but not running: "
+DataPaletteRegx[0]="Data Palette is not running"
+DataPaletteText[1]="Unable to ping Data Palette Nerve Center: "
+DataPaletteRegx[1]="Data Palette Nerve Center is not pingable"
+DataPaletteText[2]="Unable to contact Data Palette Nerve Center: "
+DataPaletteRegx[2]="Data Palette Nerve Center.*is not accessible"
+
+for i in 0 1 2
+do
+  DEBUGFILTER="${DEBUGFILTER}|${DataPaletteRegx[$i]}"
+done
+
+
+# minor alerts (yellow)
+CentrifyText[0]="Centrify should be installed but is not: "
+CentrifyRegx[0]="Centrify is not installed"
+CentrifyText[1]="Centrify agent is not running: "
+CentrifyRegx[1]="Centrify is not running"
+
+for i in 0 1
+do
+  DEBUGFILTER="${DEBUGFILTER}|${CentrifyRegx[$i]}"
+done
+
+
+# minor alerts (yellow)
+OpnetText[0]="Opnet should be installed but is not: "
+OpnetRegx[0]="OpNet is not installed"
+OpnetText[1]="OpNet agent is not running: "
+OpnetRegx[1]="OpNet is not running"
+OpnetText[2]="OpNet agent cannot reach Console: "
+OpnetRegx[2]="OpNet Server.*is not accessible"
+
+for i in 0 1 2
+do
+  DEBUGFILTER="${DEBUGFILTER}|${OpnetRegx[$i]}"
+done
+
+
+# minor alerts (yellow)
+VMwareText[0]="VMWare agent is not running: "
+VMwareRegx[0]="VMWare Agent is not running"
+VMwareText[1]="VMWare agent is not installed: "
+VMwareRegx[1]="VMWare Agent is not installed"
+
+for i in 0 1
+do
+  DEBUGFILTER="${DEBUGFILTER}|${VMwareRegx[$i]}"
+done
+
+
+NagiosText[0]="Nagios Agent is not running: "
+NagiosRegx[0]="The NRPE agent is not running"
+
+for i in 0
+do
+  DEBUGFILTER="${DEBUGFILTER}|${NagiosRegx[$i]}"
+done
+
+
+KatelloText[0]="Katello Agent not installed: "
+KatelloRegx[0]="Katello Agent RPM is not installed"
+KatelloText[1]="Katello Certificate not installed: "
+KatelloRegx[1]="Katello Certificate RPM is not installed"
+
+for i in 0 1
+do
+  DEBUGFILTER="${DEBUGFILTER}|${KatelloRegx[$i]}"
+done
+
+
+FirewallText[0]="Jumpstart server (10.100.78.143:80) is not accessible: "
+FirewallRegx[0]="Management server 10.100.78.143:80 is not accessible"
+FirewallText[1]="Jumpstart server (10.100.78.143:80) is not accessible: "
+FirewallRegx[1]="Jumpstart web server is not accessible"
+FirewallText[2]="Jumpstart server (10.100.78.143:443) is not accessible: "
+FirewallRegx[2]="Management server 10.100.78.143:443 is not accessible"
+FirewallText[3]="calgbuma01 Backup server (10.109.193.27:13724) is not accessible: "
+FirewallRegx[3]="10.109.193.27:13724 is not accessible"
+FirewallText[4]="calgbuma01 Backup server (10.109.193.27:1556) is not accessible: "
+FirewallRegx[4]="10.109.193.27:1556 is not accessible"
+FirewallText[5]="Unable to reach Mail server: "
+FirewallRegx[5]="Email server.*is not"
+FirewallText[6]="hnllhiecnbu10 Backup server (10.109.79.19:13724) is not accessible: "
+FirewallRegx[6]="10.109.79.19:13724 is not accessible"
+FirewallText[7]="hnllhiecnbu10 Backup server (10.109.79.19:1556) is not accessible: "
+FirewallRegx[7]="10.109.79.19:1556 is not accessible"
+FirewallText[8]="Unable to reach Longmont Openview server: "
+FirewallRegx[8]="Longmont VIP is not"
+FirewallText[9]="Unable to reach Miami Openview server: "
+FirewallRegx[9]="Miami VIP is not"
+FirewallText[10]="Unable to ping Longmont Openview VIP: "
+FirewallRegx[10]="Longmont Openview VIP is not pingable"
+FirewallText[11]="Unable to ping Miami Openview VIP: "
+FirewallRegx[11]="Miami Openview VIP is not pingable"
+FirewallText[12]="Unable to use configured nameserver to resolve: "
+FirewallRegx[12]="Unable to resolve"
+FirewallText[13]="Unable to ping configured nameserver: "
+FirewallRegx[13]="Nameserver.*is not pingable"
+FirewallText[14]="Jumpstart server is not pingable: "
+FirewallRegx[14]="Management server 10.100.78.143 is not pingable"
+FirewallText[15]="Longmont Tool server is not accessible: "
+FirewallRegx[15]="Management server 10.100.128.149:443 is not accessible"
+FirewallText[16]="Longmont Tool server is not pingable: "
+FirewallRegx[16]="Management server 10.100.128.149 is not pingable"
+FirewallText[17]="Miami Tool server is not accessible: "
+FirewallRegx[17]="Management server 192.168.208.86:443 is not accessible"
+FirewallText[18]="Miami Tool server is not pingable: "
+FirewallRegx[18]="Management server 192.168.208.86 is not pingable"
+FirewallText[19]="Inventory server is not accessible: "
+FirewallRegx[19]="Management server 10.100.128.201:443 is not accessible"
+FirewallText[20]="Inventory server is not pingable: "
+FirewallRegx[20]="Management server 10.100.128.201 is not pingable"
+FirewallText[21]="Jumpstart server is not accessible: "
+FirewallRegx[21]="Management server 10.100.78.143:443 is not accessible"
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21
+do
+  DEBUGFILTER="${DEBUGFILTER}|${FirewallRegx[$i]}"
+done
+
+
+#errors
+TimeText[0]="Longmont GPS server not in configuration file: "
+TimeRegx[0]="10.100.228.31 is not"
+TimeText[1]="Longmont GPS server is not reachable: "
+TimeRegx[1]="10.100.228.31:UDP/123 is not"
+TimeText[2]="Miami GPS server not in configuration file: "
+TimeRegx[2]="192.168.200.20 is not"
+TimeText[3]="Miami GPS server is not reachable: "
+TimeRegx[3]="192.168.200.20:UDP/123 is not"
+TimeText[4]="Drift directory is missing: "
+TimeRegx[4]="ntp drift file path"
+TimeText[5]="No configured time servers: "
+TimeRegx[5]="No time servers installed"
+TimeText[6]="ntp/chrony not running: "
+TimeRegx[6]="Time service is not running."
+TimeText[7]="Problem reliably connecting with a time server: "
+TimeRegx[7]="GPS Server.*Reach is.*and should be 377."
+TimeText[8]="Unable to query time server: "
+TimeRegx[8]="Unable to determine Reach for GPS Server"
+TimeText[9]="Reachability isn't 377: "
+TimeRegx[9]="GPS Server.*Reachability.*is not 377"
+TimeText[10]="Reachability is good but Status is not: "
+TimeRegx[10]="GPS Server.*Reachability is good, but Status"
+TimeText[11]="Unable to determine Reachability: "
+TimeRegx[11]="Unable to determine Reachability"
+
+# warnings
+TimeText[12]="ntp Drift File doesn't exist: "
+TimeRegx[12]="ntp drift file.*does not exist."
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12
+do
+  DEBUGFILTER="${DEBUGFILTER}|${TimeRegx[$i]}"
+done
+
+# errors
+SubMgrText[0]="Red Hat Subscription Manager not installed: "
+SubMgrRegx[0]="Subscription-Manager not installed"
+SubMgrText[1]="System is not subscribed to Satellite: "
+SubMgrRegx[1]="System is not subscribed to Satellite"
+SubMgrText[2]="Unable to access designated Sattelite port: "
+SubMgrRegx[2]="Satellite Server.*is not accessible"
+SubMgrText[3]="Unable to reach Satellite Server: "
+SubMgrRegx[3]="Satellite Server.*is not pingable"
+
+# warning
+SubMgrText[4]="System subscription has expired: "
+SubMgrRegx[4]="System subscription has expired"
+
+for i in 0 1 2 3 4
+do
+  DEBUGFILTER="${DEBUGFILTER}|${SubMgrRegx[$i]}"
+done
+
+
+# errors
+ConfigText[0]="Configuration mismatch, Memory: "
+ConfigRegx[0]="System shows.*where expected is"
+ConfigText[1]="Configuration mismatch, IP Addresses: "
+ConfigRegx[1]="Unable to locate.*in ip addr output"
+ConfigText[2]="Configuration mismatch, Gateways: "
+ConfigRegx[2]="Gateway.*is not responding to ping"
+ConfigText[3]="Messages file is not current: "
+ConfigRegx[3]="has no log entries for today"
+ConfigText[4]="Too many name server entries: "
+ConfigRegx[4]="More than 3 nameserver entries"
+ConfigText[5]="RemoveIPC still set to no: "
+ConfigRegx[5]="Set RemoveIPC to no"
+ConfigText[6]="Route table doesn't match live routes: "
+ConfigRegx[6]="Route table mismatch."
+ConfigText[7]="sudo not installed: "
+ConfigRegx[7]="sudoers file not found"
+ConfigText[8]="sudo rules missing: "
+ConfigRegx[8]="Update sudoers to add the.*rule."
+ConfigText[9]="sudo rules missing: "
+ConfigRegx[9]="Update sudoers to add the.*rule."
+ConfigText[10]="User not allowed to use cron: "
+ConfigRegx[10]="is not allowed to use cron"
+ConfigText[11]="cfg2html has not been run: "
+ConfigRegx[11]="cfg2html has not been run"
+ConfigText[12]="Interface won't start on boot: "
+ConfigRegx[12]="is not configured to start on boot"
+ConfigText[13]="Gateway not found: "
+ConfigRegx[13]="interface gateways were found"
+ConfigText[14]="Disk Suite problem identified by metadb: "
+ConfigRegx[14]="Disk Suite metadb error on"
+ConfigText[15]="Interface failed: "
+ConfigRegx[15]="Failed Interface found."
+ConfigText[16]="sudoers file not found: "
+ConfigRegx[16]="Unable to locate sudoers file."
+ConfigText[17]="No nameserver entries in resolv.conf: "
+ConfigRegx[17]="No nameserver entries found in /etc/resolv.conf"
+ConfigText[18]="SELinux Active and Enforcing: "
+ConfigRegx[18]="selinux is in Enforcing mode"
+ConfigText[19]="Techops installation scripts exist: "
+ConfigRegx[19]="/opt/techops.*directory still exists"
+ConfigText[20]="Disk Space is critical: "
+ConfigRegx[20]="has reached or exceeded 95"
+ConfigText[21]="Out of memory errors: "
+ConfigRegx[21]="Found oom-killer messages"
+ConfigText[22]="Group found in sudoers but not /etc/group: "
+ConfigRegx[22]="sudoers group.*doesn't exist"
+ConfigText[23]="Ctrl-Alt-Del is enabled: "
+ConfigRegx[23]="Ctrl-Alt-Del is enabled"
+ConfigText[24]="Ctrl-Alt-Del target is not masked: "
+ConfigRegx[24]="Ctrl-Alt-Del target is not masked"
+ConfigText[25]="Remote root access via ssh is permitted: "
+ConfigRegx[25]="Remote root access via ssh is permitted"
+ConfigText[26]="Disk Suite metastat error: "
+ConfigRegx[26]="Disk Suite metastat error"
+ConfigText[27]="chkserver Input file hasn't been installed: "
+ConfigRegx[27]="chkserver.input file not found"
+ConfigText[28]="Ctrl-Alt-Del target is enabled: "
+ConfigRegx[28]="Ctrl-Alt-Del target is enabled"
+ConfigText[29]="Crash dump files exist: "
+ConfigRegx[29]="Crash dump files exist"
+ConfigText[30]="Routes incorrectly configured: "
+ConfigRegx[30]="/etc/rc.config.d/netconf has defined "
+ConfigText[31]="Routes incorrectly configured: "
+ConfigRegx[31]="/etc/rc.config.d/netconf indicates there are "
+ConfigText[32]="eeprom not set to true: "
+ConfigRegx[32]="Sun system is not configured to automatically start on boot"
+ConfigText[33]="System IP isn't resolving correctly: "
+ConfigRegx[33]="doesn't resolve to.*in DNS"
+ConfigText[34]="System hostname isn't resolving correctly: "
+ConfigRegx[34]="unable to be found in DNS."
+
+# warnings
+ConfigText[35]="Missing IP or Hostname in /etc/hosts: "
+ConfigRegx[35]="not in /etc/hosts"
+ConfigText[36]="Misconfigured Swap: "
+ConfigRegx[36]="Gig which is less than Memory which is "
+ConfigText[37]="Misconfigured Swap: "
+ConfigRegx[37]="Memory is.*but Swap is.*Gig."
+ConfigText[38]="cfg2html is not installed yet: "
+ConfigRegx[38]="cfg2html not installed"
+ConfigText[39]="rrdtool is not installed yet: "
+ConfigRegx[39]="rrdtool is not configured or running"
+ConfigText[40]="/etc/sudoers doesn't have the hostname alias: "
+ConfigRegx[40]="/etc/sudoers doesn't contain"
+ConfigText[41]="SELinux Active and Permissive: "
+ConfigRegx[41]="selinux is in Permissive mode"
+ConfigText[42]="Disk Space is major: "
+ConfigRegx[42]="has reached or exceeded 85"
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42
+do
+  DEBUGFILTER="${DEBUGFILTER}|${ConfigRegx[$i]}"
+done
+
+
+KubeText[0]="Container failure: "
+KubeRegx[0]="Container.*has failed"
+KubeText[1]="Namespace gisdirector is reporting errors: "
+KubeRegx[1]="Namespace gisdirector is reporting errors:"
+KubeText[2]="Namespace kube-system is reporting errors: "
+KubeRegx[2]="Namespace kube-system is reporting errors:"
+KubeText[3]="Namespace nead-neam-mon is reporting errors: "
+KubeRegx[3]="Namespace nead-neam-mon is reporting errors:"
+KubeText[4]="Namespace nead-nq-service is reporting errors: "
+KubeRegx[4]="Namespace nead-nq-service is reporting errors:"
+KubeText[5]="Node is not Ready: "
+KubeRegx[5]="Node.*is currently not in Ready state"
+
+for i in 0 1 2 3 4 5
+do
+  DEBUGFILTER="${DEBUGFILTER}|${KubeRegx[$i]}"
+done
+
+
+DEBUGFILTER="${DEBUGFILTER})"
+
+
+ADMIN=/usr/local/admin
+
+if [[ -f ${ADMIN}/logs/chkstatus.log ]]
+then
+  rm ${ADMIN}/logs/chkstatus.log
+  touch ${ADMIN}/logs/chkstatus.log
+fi
+
+if [[ ! -z ${FILTER} ]]
+then
+    echo "Filtering on: ${FILTER}"
+fi
+
+if [[ ! -z ${SERVER} ]]
+then
+  SERVERLIST=`grep -v "^#" ${ADMIN}/etc/servers | egrep -i "${SERVER}" | cut -f1 -d:`
+  SERVERTOTAL=`egrep -i "${SERVER}" ${ADMIN}/etc/servers | grep -vc "^#"`
+else
+  if [[ ! -z ${PRODUCT} ]]
+  then
+    SERVERLIST=`grep -v "^#" ${ADMIN}/etc/servers | egrep -i ":.*${PRODUCT}.*:" | cut -f1 -d:`
+    SERVERTOTAL=`egrep -i ":.*${PRODUCT}.*:" ${ADMIN}/etc/servers | grep -vc "^#"`
+  else
+    if [[ ! -z ${PROJECT} ]]
+    then
+      SERVERLIST=`grep -v "^#" ${ADMIN}/etc/servers | egrep -i ":.*${PROJECT}.*$" | cut -f1 -d:`
+      SERVERTOTAL=`grep -i ":.*${PROJECT}.*$" ${ADMIN}/etc/servers | grep -vc "^#"`
+    else
+      SERVERLIST=`grep -v "^#" ${ADMIN}/etc/servers | cut -f1 -d:`
+      SERVERTOTAL=`grep -vc "^#" ${ADMIN}/etc/servers`
+    fi
+  fi
+fi
+
+if [[ -z ${SERVERLIST} ]]
+then
+  echo "Server(s) not found."
+  exit 1
+fi
+
+for i in ${SERVERLIST}
+do
+  if [[ -f ${ADMIN}/servers/${i}/chkserver.output ]]
+  then
+    if [[ -z ${FILTER} ]]
+    then
+      echo ${i} >> $ADMIN/logs/chkstatus.log
+      if [[ ${DEBUG} = 'yes' ]]
+      then
+        egrep "${GREP}" ${ADMIN}/servers/${i}/chkserver.output | egrep -v "${ERROR}" | egrep -v "${DEBUGFILTER}" >> $ADMIN/logs/chkstatus.log
+      else
+        egrep "${GREP}" ${ADMIN}/servers/${i}/chkserver.output | egrep -v "${ERROR}" >> $ADMIN/logs/chkstatus.log
+      fi
+    else
+      egrep "${GREP}" ${ADMIN}/servers/${i}/chkserver.output | egrep -v "${ERROR}" | egrep -i "${FILTER}" > /dev/null
+      if [[ $? = 0 ]]
+      then
+        echo ${i} >> $ADMIN/logs/chkstatus.log
+        egrep "${GREP}" ${ADMIN}/servers/${i}/chkserver.output | egrep -v "${ERROR}" | egrep -i "${FILTER}" >> $ADMIN/logs/chkstatus.log
+      fi
+    fi
+    SERVERTOTAL=$(( $SERVERTOTAL - 1 ))
+    printf "%s," $SERVERTOTAL
+  fi
+done
+
+echo ""
+echo ""
+
+if [[ $DEBUG = 'yes' ]]
+then
+  cat $ADMIN/logs/chkstatus.log | egrep ${GREP} | sort | uniq
+else
+  cat $ADMIN/logs/chkstatus.log
+fi
+
+if [[ $DEBUG = 'no' ]] && [[ $GREP = '31m' ]]
+then
+  echo ""
+  echo "User Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+  do
+    CountValue=`grep -c "${UserRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${UserText[$j]}" "${CountValue}" "./chkstatus -s '${UserRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Group Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37
+  do
+    CountValue=`grep -c "${GroupRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${GroupText[$j]}" "${CountValue}" "./chkstatus -s '${GroupRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "OpenView Agent Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
+  do
+    CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${OpenViewText[$j]}" "${CountValue}" "./chkstatus -s '${OpenViewRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Netbackup Agent Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13
+  do
+    CountValue=`grep -c "${NetBackupRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${NetBackupText[$j]}" "${CountValue}" "./chkstatus -s '${NetBackupRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Data Palette Issues:"
+  for j in 0 1 2
+  do
+    CountValue=`grep -c "${DataPaletteRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${DataPaletteText[$j]}" "${CountValue}" "./chkstatus -s '${DataPaletteRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Nagios Issues:"
+  for j in 0
+  do
+    CountValue=`grep -c "${NagiosRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${NagiosText[$j]}" "${CountValue}" "./chkstatus -s '${NagiosRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Ketello Issues:"
+  for j in 0 1
+  do
+    CountValue=`grep -c "${KatelloRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${KatelloText[$j]}" "${CountValue}" "./chkstatus -s '${KatelloRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Firewall Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21
+  do
+    CountValue=`grep -c "${FirewallRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${FirewallText[$j]}" "${CountValue}" "./chkstatus -s '${FirewallRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Time Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11
+  do
+    CountValue=`grep -c "${TimeRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${TimeText[$j]}" "${CountValue}" "./chkstatus -s '${TimeRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Red Hat Issues:"
+  for j in 0 1 2 3
+  do
+    CountValue=`grep -c "${SubMgrRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${SubMgrText[$j]}" "${CountValue}" "./chkstatus -s '${SubMgrRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Configuration Issues:"
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
+  do
+    CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${ConfigText[$j]}" "${CountValue}" "./chkstatus -s '${ConfigRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Kubernetes/Container Issues:"
+  for j in 0 1 2 3 4 5
+  do
+    CountValue=`grep -c "${KubeRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${KubeText[$j]}" "${CountValue}" "./chkstatus -s '${KubeRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+fi
+
+
+if [[ $DEBUG = 'no' ]] && [[ $GREP = '33m' ]]
+then
+  echo ""
+  echo "User Issues:"
+  echo ""
+#  for j in 15
+#  do
+#    CountValue=`grep -c "${UserRegx[$j]}" $ADMIN/logs/chkstatus.log`
+#    if [[ $CountValue -gt 0 ]]
+#    then
+#      printf "%75s %4d %30s\n" "${UserText[$j]}" "${CountValue}" "./chkstatus ${UserRegx[$j]}"
+#    fi
+#  done
+
+  echo "Group Issues:"
+  for j in 38
+  do
+    CountValue=`grep -c "${GroupRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${GroupText[$j]}" "${CountValue}" "./chkstatus -t w -s '${GroupRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "OpenView Agent Issues:"
+  for j in 20
+  do
+    CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${OpenViewText[$j]}" "${CountValue}" "./chkstatus -t w -s '${OpenViewRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Centrify Issues:"
+  for j in 01
+  do
+    CountValue=`grep -c "${CentrifyRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${CentrifyText[$j]}" "${CountValue}" "./chkstatus -t w -s '${CentrifyRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Opnet Agent Issues:"
+  for j in 0 1 2
+  do
+    CountValue=`grep -c "${OpnetRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${OpnetText[$j]}" "${CountValue}" "./chkstatus -t w -s '${OpnetRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "VMware Issues:"
+  for j in 0 1
+  do
+    CountValue=`grep -c "${VMwareRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${VMwareText[$j]}" "${CountValue}" "./chkstatus -t w -s '${VMwareRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Firewall Issues:"
+#  for j in 
+#  do
+#    CountValue=`grep -c "${FirewallRegx[$j]}" $ADMIN/logs/chkstatus.log`
+#    if [[ $CountValue -gt 0 ]]
+#    then
+#      printf "%75s %4d %30s\n" "${FirewallText[$j]}" "${CountValue}" "./chkstatus -t w -s '${FirewallRegx[$j]}'"
+#    fi
+#  done
+
+  echo ""
+  echo "Time Issues:"
+  for j in 12
+  do
+    CountValue=`grep -c "${TimeRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${TimeText[$j]}" "${CountValue}" "./chkstatus -t w -s '${TimeRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Red Hat Issues:"
+  for j in 4
+  do
+    CountValue=`grep -c "${SubMgrRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${SubMgrText[$j]}" "${CountValue}" "./chkstatus -s '${SubMgrRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Configuration Issues:"
+  for j in 35 36 37 38 39 40 41 42
+  do
+    CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${ConfigText[$j]}" "${CountValue}" "./chkstatus -t w -s '${ConfigRegx[$j]}'"
+    fi
+  done
+
+  echo ""
+  echo "Kubernetes/Container Issues:"
+#  for j in 
+#  do
+#    CountValue=`grep -c "${KubeRegx[$j]}" $ADMIN/logs/chkstatus.log`
+#    if [[ $CountValue -gt 0 ]]
+#    then
+#      printf "%75s %4d %30s\n" "${KubeText[$j]}" "${CountValue}" "./chkstatus -t w -s '${KubeRegx[$j]}'"
+#    fi
+#  done
+
+  echo ""
+fi
+
+echo "Total Issues: `egrep -c ${GREP} $ADMIN/logs/chkstatus.log`"
+
+exit 0
+

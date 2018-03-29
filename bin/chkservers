@@ -1,0 +1,334 @@
+#!/bin/ksh
+
+# chkservers - Verify that servers are up and have been up for a bit.
+# Owner: Carl Schelin
+# 2013-11-06 Pietras: Updated ERROR loop to include Warnings in the output if both Errors and Warnings are generated.
+# 2013-12-18 Carl: changed hard coded servers file listing to a variable in prep for general chkservers access.
+# 2015-07-28 Carl: Added the ability for webapps to query their servers and get morning reports on server up time.
+# NOTE: Someone's email from the WebApps team has to be on the command line for an all of their servers check. 
+# see the admins.email file for a valid name
+# 2015-07-30 Carl: Added the ability for dbas to query their servers and get morning reports on server up time.
+# 2015-08-03 Carl: Added in a bit to check and see if the script is actually running
+
+PID=$$
+RUNBY=`/usr/xpg4/bin/id -u`
+PROGNAME="chkservers"
+LOC=/usr/local/admin
+
+echo "$1:$2:$3" >> /var/tmp/chkservers.carl.output
+
+CHKSERVERS=all
+FROM=''
+# procmail sometimes passes '<no subject>' if an email is passed after $SUBJ
+# passed <no subject> when I requested all servers but passed just ashley's 
+# email when she sent in an all servers request
+if [[ ! -z $3 ]]
+then
+  if [[ $1 = '<no' ]]
+  then
+    CHKSERVERS=all
+    FROM=$3
+    shift 3
+  fi
+fi
+if [[ ! -z $2 ]]
+then
+  CHKSERVERS=$1
+  FROM=$2
+  shift 2
+fi
+if [[ ! -z $1 ]]
+then
+# chkservers could be email or a server name
+  CHKSERVERS=$1
+  FROM=$1
+  shift
+fi
+
+  
+# by default, Unix
+TEAM="Unix"
+SERVERFILE=$LOC/etc/servers
+WHOCARES="UnixAdmins@intrado.com"
+LOG=/var/tmp/unix.servers.output
+CHKPID=/var/tmp/unix.servers.pid
+MAIL=/var/tmp/unix.servers.mail
+
+# if $FROM is not blank, check it against the admins files
+if [[ ! -z $FROM ]]
+then
+  OUTPUT=`grep -i "^${FROM}$" /export/home/unixsvc/unix.admins.email`
+  if [[ ! -z $OUTPUT ]]
+  then
+    TEAM="Unix"
+    SERVERFILE=$LOC/etc/servers
+    WHOCARES="UnixAdmins@intrado.com"
+    LOG=/var/tmp/unix.servers.output
+    CHKPID=/var/tmp/unix.servers.pid
+    MAIL=/var/tmp/unix.servers.mail
+    if [[ $CHKSERVERS = $FROM ]]
+    then
+      CHKSERVERS=all
+    fi
+  else 
+    OUTPUT=`grep -i "^${FROM}$" /export/home/unixsvc/webapps.admins.email`
+    if [[ ! -z $OUTPUT ]]
+    then
+      TEAM="WebApps"
+      SERVERFILE=$LOC/etc/servers.web
+      WHOCARES="WebApplicationsTeam@intrado.com"
+      LOG=/var/tmp/webapps.servers.output
+      CHKPID=/var/tmp/webapps.servers.pid
+      MAIL=/var/tmp/webapps.servers.mail
+      if [[ $CHKSERVERS = $FROM ]]
+      then
+        CHKSERVERS=all
+      fi
+    else
+      OUTPUT=`grep -i "^${FROM}$" /export/home/unixsvc/dbagroup.admins.email`
+      if [[ ! -z $OUTPUT ]]
+      then
+        TEAM="DBAs"
+        SERVERFILE=$LOC/etc/servers.dba
+        WHOCARES="DBAGroup@intrado.com"
+        LOG=/var/tmp/dbagroup.servers.output
+        CHKPID=/var/tmp/dbagroup.servers.pid
+        MAIL=/var/tmp/dbagroup.servers.mail
+        if [[ $CHKSERVERS = $FROM ]]
+        then
+          CHKSERVERS=all
+          fi
+      else
+# can't find $FROM in the admins.email files so it must be a server or an email that isn't in one of the files.
+# the error in the server check will bail and email back to the sender if a bogus email address
+        TEAM="Unix"
+        SERVERFILE=$LOC/etc/servers
+        WHOCARES="UnixAdmins@intrado.com"
+        LOG=/var/tmp/unix.servers.output
+        CHKPID=/var/tmp/unix.servers.pid
+        MAIL=/var/tmp/unix.servers.mail
+      fi
+    fi
+  fi
+fi
+
+if [[ $RUNBY -ne 5000 ]] && [[ $RUNBY -ne 80 ]]
+then
+  echo "This script must be run by the Unix Service or Websrvd account."
+  exit 0
+fi
+
+# delete the temp files in case they've been sitting for a while.
+if [[ $CHKSERVERS = 'delete' || $CHKSERVERS = 'Delete' || $CHKSERVERS = 'DELETE' ]]
+then
+  if [[ -f $LOG ]]
+  then
+    rm $LOG
+  fi
+  if [[ -f $CHKPID ]]
+  then
+    rm $CHKPID
+  fi
+  if [[ -f $MAIL ]]
+  then
+    rm $MAIL
+  fi
+  exit 1
+  FROM=''
+fi
+
+if [[ -f $CHKPID ]]
+then
+  RUNNING=`cat $CHKPID`
+  OUTPUT=`ps -ef | egrep "ksh.*chkservers" | awk '{print $2}'`
+  if [[ -z $OUTPUT ]]
+  then
+    OUTPUT=0
+  fi
+  if [[ $OUTPUT = $RUNNING ]]
+  then
+    echo "Check Servers Script is running. Try again later. ($RUNNING)\n$OUTPUT" | mailx -s "chkservers still running" $WHOCARES
+    exit 1
+  fi
+# if for some reason the script was interrupted, continue (as in, the pid file exists but the pid in the file isn't running)
+  echo $PID > $CHKPID
+else
+  echo $PID > $CHKPID
+fi
+
+# check to see if the server passed exists in the server listing or if it equals '[A|a]ll', otherwise exit without error
+if [[ $CHKSERVERS = "all" || $CHKSERVERS = "All" || $CHKSERVERS = "ALL" ]]
+then
+  SERVERLIST=`grep -v "^#" $SERVERFILE | cut -f1 -d:`
+  SINGLESERVER="no"
+else
+# this part checks the first field and interface name field in the servers file
+  OUTPUT=`/usr/bin/egrep -i "(,|^)${CHKSERVERS}(,|:)" $SERVERFILE | /usr/bin/grep -v "^#" | cut -f1 -d:`
+  if [[ -z $OUTPUT ]]
+  then
+    if [[ ! -z $FROM ]]
+    then
+      echo "----- chkservers error -----
+
+ERROR!
+
+This error is generated for one of the following reasons:
+
+1. $CHKSERVERS isn't managed by the $TEAM team
+2. $CHKSERVERS isn't able to be accessed by the unixsvc account such as a Windows or Networking system or an Application
+3. $FROM is not permitted to send mail to the unixsvc account
+
+Contact the Unix Team for support or correct the server name and try again.
+
+----- end error message -----
+" | mailx -s "ERROR! $CHKSERVERS" $FROM
+    fi
+    exit 0
+  else
+    CHKSPACE=`echo $OUTPUT | grep -c ' '`
+    if [[ $CHKSPACE = 0 ]]
+    then
+      SERVERLIST="$OUTPUT"
+      SINGLESERVER="yes"
+    else
+      SERVERLIST="$OUTPUT"
+      SINGLESERVER="no"
+    fi
+  fi
+fi
+
+if [[ -f $LOG ]]
+then
+  rm $LOG
+fi
+
+for i in $SERVERLIST
+do
+  SERVER=`echo $i|cut -f1 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=90
+
+# Content here: scp the config file from here
+
+  CONTENT="uptime"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  /usr/bin/ssh $SERVER "/usr/bin/uptime" > $SVRPATH/$CONTENT.output &
+  PID=$!
+
+# wait for the specified number of seconds for ssh to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+  while [[ $TIMEOUT -gt 0 ]]
+  do
+    /usr/bin/ps -p $PID > /dev/null 2>&1
+    if [[ $? -ne 0 ]]
+    then
+      break
+    fi
+    TIMEOUT=$(($TIMEOUT - 1))
+    sleep 1
+  done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+  if [[ $TIMEOUT -le 0 ]]
+  then
+    echo "ERROR: Unable to connect to server ($SERVER)" >> $LOG
+    chmod 664 /var/tmp/chkservers.status
+    kill -KILL $PID
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# This is the validate output section. If you need to check for certain values or otherwise process
+# the results of the above command, do it here.
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    UPTIME=`cat $SVRPATH/$CONTENT.output`
+    echo $SERVER $UPTIME >> $LOG
+    DAYS=`awk '{print $4}' $SVRPATH/$CONTENT.output`
+# if the server's been up for a day or more, ignore the results. Otherwise, report it.
+    if [[ $DAYS = "days," || $DAYS = "day(s)," || $DAYS = "day," ]]
+    then
+      TIME="Placeholder"
+    else
+      echo "WARNING: $SERVER $UPTIME\n" >> $LOG
+    fi
+  else
+      echo "WARNING: $SERVER 'uptime.output' was not created." >> $LOG
+  fi
+
+done
+
+ERROR=`/usr/bin/grep "^ERROR:" $LOG`
+WARNING=`/usr/bin/grep "^WARNING:" $LOG | grep -v "'uptime.output' was not created."`
+
+if [[ -z $ERROR ]]
+then
+  if [[ $SINGLESERVER = "yes" ]]
+  then
+    echo "$SERVERLIST was successfully contacted" | /usr/bin/tee $MAIL
+    if [[ -f $LOC/servers/$SERVERLIST/uptime.output ]]
+    then
+      cat $LOC/servers/$SERVERLIST/uptime.output | /usr/bin/tee -a $MAIL
+    else
+      echo "WARNING: The unixsvc account was unable to run the uptime command via ssh. History shows the unixsvc account has been disabled. Please investigate." | /usr/bin/tee -a $MAIL
+    fi
+  else
+    echo "All servers were successfully contacted" | /usr/bin/tee $MAIL
+    /usr/bin/grep "^WARNING:" $LOG | /usr/bin/tee -a $MAIL
+  fi
+  cat $MAIL | /usr/bin/mailx -s "Server Check Reports Success" $WHOCARES
+else
+  if [[ $SINGLESERVER = "yes" ]]
+  then
+    echo $ERROR | /usr/bin/tee $MAIL
+    cat $MAIL | /usr/bin/mailx -s "ERROR: Server Check Reports Failure" $WHOCARES
+  else
+    echo "The following servers were not able to be contacted:" | /usr/bin/tee $MAIL
+    /usr/bin/grep "^ERROR:" $LOG | /usr/bin/tee -a $MAIL
+    if [[ ! -z $WARNING ]]
+    then
+      echo "\n\nThe following servers were rebooted during the past 24 hours" | /usr/bin/tee -a $MAIL
+      /usr/bin/grep "^WARNING:" $LOG | grep -v "'uptime.output' was not created."  | /usr/bin/tee -a $MAIL
+    fi
+    cat $MAIL | /usr/bin/mailx -s "ERROR: Server Check Reports Failures" $WHOCARES
+  fi
+fi
+
+if [[ -f $CHKPID ]]
+then
+  rm $CHKPID
+fi
+
+exit 0
+

@@ -1,0 +1,58 @@
+#!/bin/bash
+
+ADMIN=/usr/local/admin
+DATE=`date +"%w"`
+
+if [[ ! -z $1 ]]
+then
+  TARGET=`grep $1 $ADMIN/etc/servers | grep -v "^#"`
+else
+  TARGET=`grep -v "^#" $ADMIN/etc/servers`
+fi
+
+if [[ -z $TARGET ]]
+then
+  echo "Failed to find server: $1"
+  exit 1
+fi
+
+cd /usr/local/httpd/bin
+
+for i in $TARGET
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  SID=`echo $i|cut -f7 -d:`
+
+# if it exists
+  if [[ -f $ADMIN/servers/$SERVER/passwd.diff ]]
+  then
+# if it's Friday, do a full import  
+    if [[ $DATE = 5 ]]
+    then
+      /usr/local/bin/php accounts.php p $SID $ADMIN/servers/$SERVER/passwd
+# if it's greater than 0 bytes, otherwise ignore it
+    else
+      if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
+      then
+        /usr/local/bin/php accounts.php p $SID $ADMIN/servers/$SERVER/passwd
+      fi
+    fi
+  fi
+
+# if it exists
+  if [[ -f $ADMIN/servers/$SERVER/group.diff ]]
+  then
+# if it's Friday, do a full import  
+    if [[ $DATE = 5 ]]
+    then
+      /usr/local/bin/php accounts.php g $SID $ADMIN/servers/$SERVER/group
+# if it's greater than 0 bytes, otherwise ignore it
+    else
+      if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
+      then
+        /usr/local/bin/php accounts.php g $SID $ADMIN/servers/$SERVER/group
+      fi
+    fi
+  fi
+done
+

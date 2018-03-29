@@ -1,0 +1,21 @@
+#!/bin/ksh
+
+# Carl Schelin
+# creates an identification file for each server
+
+ADMIN=/usr/local/admin
+OUTPUT=$ADMIN/logs/fingerprint
+
+cd /usr/local/httpd/bin
+
+for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+do
+  
+  /usr/local/bin/php fingerprint.php $i > $OUTPUT
+
+  cat $OUTPUT
+
+  scp $ADMIN/logs/fingerprint $i:/opt/intrado/etc/
+
+done
+

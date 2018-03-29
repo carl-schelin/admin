@@ -1,0 +1,20 @@
+#!/bin/ksh
+
+SAVED="/home/cschelin"
+
+#smbclient -U cschelin \\\\LMV08-FS01\\Departments [password]
+#cd "UNIX NT System"\Private\Email_Addresses
+#get CORP_List.txt
+
+cd $SAVED
+/usr/bin/smbclient //lmv08-fs01/Departments -A getemail.access -c "cd \"UNIX NT System\"\\Private\\Email_Addresses; get CORP_List.txt; exit;"
+
+# if you're not sure or want to check, go to the O: drive and drill down to :
+# UNIX NT System\Private\Email_Addresses
+# the file name is CORP_List.txt
+# for the server name(s), bring up the properties of the O: drive and you'll see a list of the servers
+
+/bin/cat $SAVED/CORP_List.txt | /usr/bin/tr [A-Z] [a-z] | /usr/bin/sort | /usr/bin/uniq | /bin/sed -e "s/$//g" > $SAVED/intrado.email
+
+/usr/bin/scp $SAVED/intrado.email incojs01:/usr/local/admin/etc
+

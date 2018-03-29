@@ -1,0 +1,124 @@
+#!/usr/bin/perl
+#
+# chkservices - This script processes the exclude file against each servers services output file. 
+#
+
+$home="/usr/local/admin";
+$whocares="";
+$path="$home/servers";
+
+# looking for YYYYMMDD to be passed, otherwise pull from file
+$date = shift;
+if ($date == "") {
+  $date=`cat $path/messages.date`;
+}
+chomp $date;
+
+# copy the exclude files into the messages directory so folks can see 
+# what's being parsed.
+`cp $home/etc/services.exclude /var/apache2/htsecure/services`;
+
+#####
+# Nothing else should need to be changed after this point
+#####
+
+@servers=`grep -v "^#" $home/etc/servers`;
+
+# Retrieve the search strings
+@exclude=`grep -v "^#" $home/etc/services.exclude`;
+
+# Remove the trailing \n's
+for ($i=0; $i<=$#exclude; $i++) {
+  chomp $exclude[$i];
+}
+
+# Create the log files for today
+print "$home/logs/logfile/pslog.$date\n";
+open (LOG,      ">$home/logs/logfile/svclog.$date") or die "Unable to open log file";
+open (EMAIL,    ">$home/logs/report/svcreport.$date") or die "Unable to open report file";
+
+# Set up the start of the log files
+print LOG      "\n";
+print EMAIL    "\n";
+
+$startdate=`date`;
+print LOG      "BEGIN $startdate";
+print EMAIL    "BEGIN $startdate";
+
+for ($i=0; $i <= $#servers; $i++) {
+  chop $servers[$i];
+
+  ($svrname,$cluster,$os) = split(":", $servers[$i]);
+
+  print $svrname, "\n";
+
+  if ($os eq "Linux") {
+    doServer($svrname);
+  }
+}
+
+$enddate=`date`;
+print LOG      "\nEND   $enddate\n";
+print EMAIL    "\nEND   $enddate\n";
+
+close EMAIL;
+close LOG;
+
+system("cp $home/logs/report/svcreport.$date /var/apache2/htsecure/services");
+
+exit 0;
+
+# Subroutine: doServer
+# Args:
+#   $server   - name of server where logs originated
+
+sub doServer {
+  $server = $_[0];  
+
+# Process the server logs
+
+  print LOG      "\nProcessing $server\n";
+  print EMAIL    "\nProcessing $server\n";
+
+# Create the hostname directory if it doesn't exist
+  if ( ! -d "$path/$server" ) {
+    mkdir "$path/$server",0775;
+  }
+
+  open (INPUT, "$path/$server/services.output") or print EMAIL "ERROR: Unable to open $path/$server/services.output\n";
+  while (<INPUT>) {
+    chomp;
+
+# Scan the log and exclude the known messages
+    $dont=0;
+    for ($j=0; $j <= $#exclude; $j++) {
+
+      (@list) = split(";", $exclude[$j]);
+      if ($list[0] eq "*") {
+        $list[0] = $server;
+      }
+      $toexclude = $list[0] . ";" . $list[1] . ";" . $list[2];
+      $svrexclude = $server . ";" . $list[1] . ";" . $_;
+
+      (@compone) = split(" ", $list[2]);
+      (@comptwo) = split(" ", $_);
+
+#      if ($list[1] == 0 && $compone[0] eq $comptwo[0]) {
+#        open (CONFIG, ">>" . $path . "/" . $server . "/config.status");
+#        print CONFIG "WARNING: $compone[0] is an installed service and the package should be removed.\n";
+#        close CONFIG;
+#      }
+
+      if ($svrexclude =~ /$toexclude/) {
+        $dont=1;
+      }
+    }
+    if (0 == $dont) {
+      print EMAIL $_, "\n";
+    }
+
+  }
+  close INPUT;
+
+}
+

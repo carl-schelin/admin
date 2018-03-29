@@ -1,0 +1,75 @@
+#!/bin/ksh
+
+# So pass the three letter code to this script for when to gather data.
+LOC=/usr/local/admin
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i | cut -f1 -d:`
+  OS=`echo $i | cut -f3 -d:`
+  TIME=`echo $i | cut -f4 -d:`
+  TIMEOUT=80
+
+  echo $SERVER
+
+  if [[ ! -d $LOC/servers/$SERVER ]]
+  then
+    mkdir $LOC/servers/$SERVER
+  fi
+
+  if [[ $OS = "Linux" ]]
+  then
+    /usr/bin/ssh $SERVER "ps -ef" | sort -k8 > $LOC/servers/$SERVER/process.output &
+    PID=$!
+  fi
+  if [[ $OS = "OSF1" ]]
+  then
+    /usr/bin/ssh $SERVER "ps -ef" | sort -k9 > $LOC/servers/$SERVER/process.output &
+    PID=$!
+  fi
+  if [[ $OS = "FreeBSD" ]]
+  then
+    /usr/bin/ssh $SERVER "ps -aux" | sort -k6 > $LOC/servers/$SERVER/process.output &
+    PID=$!
+  fi
+  if [[ $OS = "HP-UX" ]]
+  then
+    /usr/bin/ssh $SERVER "ps -ef" | sort -k9 > $LOC/servers/$SERVER/process.output &
+    PID=$!
+  fi
+  if [[ $OS = "SunOS" ]]
+  then
+    /usr/bin/ssh $SERVER "ps -ef" | sort -k9 > $LOC/servers/$SERVER/process.output &
+    PID=$!
+  fi
+
+# wait for the specified number of seconds for the script to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      kill -KILL $PID
+      echo "ERROR Unable to contact $SERVER to retrieve its process output" > $LOC/servers/$SERVER/process.output
+    fi
+  fi
+
+done
+

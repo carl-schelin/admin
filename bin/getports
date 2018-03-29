@@ -1,0 +1,122 @@
+#!/bin/ksh
+
+# getports - Retrieve the output of chkports which is a list of open ports with associated programs and who's running the program using lsof
+# Owner: Carl Schelin
+# 2/28/2012 - initial
+# 
+
+PROGNAME="getports"
+LOC=/usr/local/admin
+
+if [[ -f /usr/local/httpd/htsecure/reports/chkports.output ]]
+then
+  rm /usr/local/httpd/htsecure/reports/chkports.output
+fi
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=180
+
+# Content here: scp the config file from here
+
+  CONTENT="chkports"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  /usr/bin/scp $SERVER:/opt/intrado/etc/$CONTENT.output $SVRPATH 2>&1 &
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+      kill -KILL $PID
+    fi
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# compare the "good" content with the currently captured output.
+
+  if [[ -f $SVRPATH/$CONTENT.output ]]
+  then
+    if [[ -f $SVRPATH/$CONTENT.good ]]
+    then
+      /usr/bin/diff $SVRPATH/$CONTENT.output $SVRPATH/$CONTENT.good > $SVRPATH/$CONTENT.diff
+# CS: no need to report ports for every server. they constantly change.
+#      if [[ -s $SVRPATH/$CONTENT.diff ]]
+#      then
+#        echo "WARNING: $CONTENT differences. Check server." >> $SVRPATH/config.status
+#        echo "WARNING: $CONTENT differences. Check server." >> $SVRPATH/morning.status
+#      fi
+      cat $SVRPATH/$CONTENT.output >> /usr/local/httpd/htsecure/reports/chkports.output
+    else
+      echo "WARNING: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/config.status
+      echo "WARNING: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/morning.status
+    fi
+  else
+    echo "WARNING: $SVRPATH/$CONTENT.output file not found." >> $SVRPATH/config.status
+    echo "WARNING: $SVRPATH/$CONTENT.output file not found." >> $SVRPATH/morning.status
+  fi
+
+done
+
+if [[ -f /usr/local/httpd/htsecure/reports/chkports.output ]]
+then
+  sort -n < /usr/local/httpd/htsecure/reports/chkports.output | uniq > /usr/local/httpd/htsecure/reports/chkports.inuse
+fi
+
+exit 0
+

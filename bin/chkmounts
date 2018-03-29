@@ -1,0 +1,97 @@
+#!/bin/ksh
+
+# chkmounts - Check the status of mounted file systems on Linux systems
+# Owner: Carl Schelin
+
+RUNBY=`/usr/xpg4/bin/id -u`
+PROGNAME="chkmounts"
+LOC=/usr/local/admin
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux | cut -f1 -d:`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+  
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=90
+
+# Content here: scp the config file from here
+
+  CONTENT="chkmounts"
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  /usr/bin/ssh $SERVER "egrep '(,| )ro(,| )' /proc/mounts" > $SVRPATH/$CONTENT.output &
+  PID=$!
+
+# wait for the specified number of seconds for ssh to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+  while [[ $TIMEOUT -gt 0 ]]
+  do
+    /usr/bin/ps -p $PID > /dev/null 2>&1
+    if [[ $? -ne 0 ]]
+    then
+      break
+    fi
+    TIMEOUT=$(($TIMEOUT - 1))
+    sleep 1
+  done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+  if [[ $TIMEOUT -le 0 ]]
+  then
+    echo "ERROR: Unable to connect to server ($SERVER)" >> $SVRPATH/config.status
+    chmod 664 $SVRPATH/config.status
+    echo "ERROR: Unable to connect to server ($SERVER)" >> $SVRPATH/morning.status
+    chmod 664 $SVRPATH/morning.status
+    kill -KILL $PID
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT.output ]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# if there is a r/o file system, note it here
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    echo "ERROR: Read-Only filesystem discovered" >> $SVRPATH/config.status
+    echo "ERROR: Read-Only filesystem discovered" >> $SVRPATH/morning.status
+    cat $SVRPATH/$CONTENT.output
+  fi
+
+done
+
+exit 0
+

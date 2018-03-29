@@ -1,0 +1,324 @@
+#!/bin/ksh
+
+# getreports - Carl Schelin - 2012-03-01
+# Script to manage the intrado data retrieval scripts
+#
+# Note: This script only runs the one-time only scripts. Anything that needs to run often 
+# during the day such as chkov or the rrdtool scripts should have their own entries in cron
+#
+# Changelog:
+
+INTRADO=/usr/local/admin
+HOSTNAME=`hostname|cut -f1 -d.`
+LOG=$INTRADO/var/intrado.log
+EXITCODE=0
+OS=`uname`
+DATE=`date +"%Y%m%d"`
+# Day of Week 1=Monday, 7=Sunday
+DOWEEK=`date +"%u"`
+# Day of Month, 01-31
+DOMONTH=`date +"%d"`
+
+# ensure directories exist and are writeable
+if [[ ! -d $INTRADO/var ]]
+then
+  mkdir -p $INTRADO/var
+  chown unixsvc:sysadmin $INTRADO/var
+  chmod 770 $INTRADO/var
+fi
+if [[ ! -d $INTRADO/etc ]]
+then
+  mkdir -p $INTRADO/etc
+  chown unixsvc:sysadmin $INTRADO/etc
+  chmod 770 $INTRADO/etc
+fi
+
+echo "`date` intrado script started" >> $LOG
+
+# First ensure the /opt/intrado directory structure is owned properly so data files can be written
+chown -R unixsvc:sysadmin $INTRADO
+chmod -R 770 $INTRADO
+
+# function to run the scripts and set a timeout. this ensures all scripts exit before the final cleanup
+runscript () {
+
+  if [[ -f $INTRADO/bin/$1 ]]
+  then
+    $INTRADO/bin/$1 >> $LOG &
+    PID=$!
+
+# really just waiting for the scripts to end. don't expect it to take long.
+    TIMEOUT=600
+
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. report something
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      echo "ERROR: $1 failed to exit in $TIMEOUT seconds" >> $LOG
+      kill -KILL $PID
+    else
+      FINISHED=$((600 - $TIMEOUT))
+      echo "$1 ran in $FINISHED seconds" >> $LOG
+    fi
+  else
+    echo "$1 script doesn't exist" >> $LOG
+  fi
+
+# pause to let the scripts finish 
+  sleep 3
+
+  return
+}
+
+# Next run any universal scripts; script that check for the operating system or are generic enough
+
+# Ensures there's at least one entry in syslog
+runscript logme
+
+# Get interface information for the database
+runscript chkif
+
+# check for defunct processes
+runscript chkdef
+
+# Produces the output of the TMPROOT variable in sudoers
+runscript chksudo
+
+# check all raid devices
+runscript chkraid
+
+# check ethernet settings using ethtool
+runscript chketh
+
+# check security and performance settings
+runscript chkstack
+
+# retrieve version information from installed tools
+runscript chkversion
+
+# get prtdiag -lv from sun servers. Internal check of OS so only runs on Sun
+runscript chkprtdiag
+
+# initially get the setting for permitrootlogin from sshd_config. Others will be added.
+runscript chksecurity
+
+# get any san configuration info
+runscript chksan
+
+# gather and validate the open ports
+runscript chkports
+
+# clean up on aisle three
+runscript cleanup
+
+# any general processes
+if [[ $DOMONTH = '01' ]]
+then
+# run cfg2html on the first of the month
+  if [[ $OS = "FreeBSD" ]]
+  then
+    $INTRADO/cfghtml/cfg2html > $INTRADO/cfghtml/$HOSTNAME.html
+  else
+    $INTRADO/cfghtml/cfg2html >> $LOG
+  fi
+
+# run explorer if it exists
+  if [[ $OS = "SunOS" ]]
+  then
+    if [[ -f /opt/SUNWexplo/bin/explorer ]]
+    then
+      /opt/SUNWexplo/bin/explorer -q -P >> $LOG
+    fi
+  fi
+
+# compress the rrdtool logs if they exist
+  if [[ -d /var/rrdtool ]]
+  then
+    for i in cpu hdd load mem net ntp 
+    do
+      if [[ -f /var/rrdtool/data/rrdtool.$i ]]
+      then
+        mv /var/rrdtool/data/rrdtool.$i /var/rrdtool/data/rrdtool.$i.$DATE
+        gzip -9 /var/rrdtool/data/rrdtool.$i.$DATE
+        echo "Compressing rrdtool.$i" >> $LOG
+      fi
+    done
+  fi
+
+# save the megarc configuration file
+  runscript runmrc
+
+fi
+
+
+# Now any unique OS based scripts. For instance, HP-UX has perl in two different locations
+
+# Linux
+if [[ $OS = "Linux" ]]
+then
+
+# Get interface information for the database
+  runscript chkusers
+
+# retrieve sudoers information
+  runscript chksudoers
+
+# make a backup of the anaconda kickstart config file
+  if [[ -f /root/anaconda-ks.cfg ]]
+  then
+    cp -p /root/anaconda-ks.cfg $INTRADO/etc/ >> $LOG
+  fi
+
+# ensure log files are set up correctly
+  chown root:sysadmin /var/log/messages*
+  chmod 644 /var/log/messages*
+
+fi
+
+# SunOS
+if [[ $OS = "SunOS" ]]
+then
+
+# Retrieve user information and status of account
+  runscript chkusers
+
+# retrieve sudoers information
+  runscript chksudoers
+
+# ensure log files are set up correctly
+  chown root:sysadmin /var/adm/messages*
+  chmod 644 /var/adm/messages*
+
+fi
+
+# HP-UX
+if [[ $OS = "HP-UX" ]]
+then
+
+# Retrieve user information and status of account
+  if [[ -f /usr/contrib/bin/perl ]]
+  then
+    runscript chkusers.contrib
+
+# retrieve sudoers information
+    runscript chksudoers
+
+  fi
+  if [[ -f /usr/bin/perl ]]
+  then
+    runscript chkusers
+
+# retrieve sudoers information
+    runscript chksudoers
+
+  fi
+
+  if [[ $DOWEEK = '7' ]]
+  then
+    runscript logroll
+  fi
+
+# ensure log files are set up correctly
+  chown root:sysadmin /var/adm/syslog/syslog.log
+  chmod 644 /var/adm/syslog/syslog.log
+
+fi
+
+# Tru64
+if [[ $OS = "OSF1" ]]
+then
+
+# Retrieve user information and status of account
+  runscript chkusers
+
+# retrieve sudoers information
+  runscript chksudoers
+
+# check status of array
+  runscript chkarray
+
+  if [[ $DOWEEK = '2' ]]
+  then
+    runscript logroll
+  fi
+
+  if [[ $DOMONTH = '01' ]]
+  then
+    runscript scanraid
+  fi
+
+# ensure log files are set up correctly
+  chown root:sysadmin /var/cluster/members/{memb]/adm/messages*
+  chmod 644 /var/cluster/members/{memb]/adm/messages*
+
+fi
+
+# FreeBSD
+if [[ $OS = "FreeBSD" ]]
+then
+
+# Retrieve user information and status of account
+  runscript chkusers
+
+# retrieve sudoers information
+    runscript chksudoers
+
+# ensure log files are set up correctly
+  chown root:sysadmin /var/log/messages*
+  chmod 644 /var/log/messages*
+
+fi
+
+# Section for server specific scripts
+# to use, create a script that's the same as the output of the hostname command
+# any commands in that script will be executed only on that system.
+# make sure it matches `hostname` and not what is used to access the host as that 
+# can be two different things.
+
+if [[ -f $INTRADO/bin/$HOSTNAME ]]
+then
+  runscript $HOSTNAME
+fi
+
+# added bit to identify and run scripts that run weekly. simply add the extension '.weekly.' to 
+# hostname of the server as the file name to execute scripts on Sunday's run.
+if [[ $DOWEEK = "07" ]]
+then
+  if [[ -f $INTRADO/bin/$HOSTNAME.weekly ]]
+  then
+    runscript $HOSTNAME.weekly
+  fi
+fi
+
+# And finish the log
+echo "`date` intrado script ended" >> $LOG
+echo "======================" >> $LOG
+
+# Roll and compress the logs at the beginning of the month
+if [[ $DOMONTH = '01' ]]
+then
+  cp $LOG $LOG.$DATE
+  cat /dev/null > $LOG
+  gzip -9 $LOG.$DATE
+fi
+
+# Ensure the /opt/intrado directory structure is owned properly so data files can be read
+chown -R unixsvc:sysadmin $INTRADO
+chmod -R 770 $INTRADO
+
+# Clean up the old data files in case they exist.
+find $INTRADO/etc -atime +1 -exec rm {} \;
+
+exit $EXITCODE
+

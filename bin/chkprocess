@@ -1,0 +1,94 @@
+#!/bin/ksh
+
+# chkprocess - Retrieve the ps output and email
+# Owner: Carl Schelin
+
+PID=$$
+RUNBY=`/usr/xpg4/bin/id -u`
+PROGNAME="chkprocess"
+LOC=/usr/local/admin
+
+# passed is
+# server name
+# email address to return the info to
+
+if [[ -z $1 ]]
+then
+  echo "You need to pass the server name"
+  exit 1
+fi
+
+if [[ -z $2 ]]
+then
+  echo "You need to pass the email address of who gets the report"
+  exit 1
+fi
+ 
+# start the pull
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+SVRPATH="$LOC/servers/$SERVER"
+
+if [ ! -d $SVRPATH ]
+then
+  mkdir $SVRPATH
+  chmod 775 $SVRPATH
+fi
+
+TIMEOUT=90
+
+# Content here: scp the config file from here
+
+CONTENT="process"
+
+if [ -f $SVRPATH/$CONTENT.output ]
+then
+  rm $SVRPATH/$CONTENT.output
+fi
+
+/usr/bin/ssh $SERVER "ps -ef" > $SVRPATH/$CONTENT.output &
+PID=$!
+
+# wait for the specified number of seconds for ssh to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+while [[ $TIMEOUT -gt 0 ]]
+do
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -ne 0 ]]
+  then
+    break
+  fi
+  TIMEOUT=$(($TIMEOUT - 1))
+  sleep 1
+done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+if [[ $TIMEOUT -le 0 ]]
+then
+  echo "ERROR: Unable to connect to server ($SERVER)" >> $LOG
+  chmod 664 /var/tmp/chkservers.status
+  kill -KILL $PID
+fi
+
+# if there's no output, delete the 0 byte file
+
+if [ ! -s $SVRPATH/$CONTENT.output ]
+then
+  rm $SVRPATH/$CONTENT.output
+fi
+
+# set the perms as the last step
+
+if [ -f $SVRPATH/$CONTENT.output ]
+then
+  chmod 664 $SVRPATH/$CONTENT.output
+fi
+
+cat $SVRPATH/$CONTENT.output | mailx -s "$SERVER Process Output" $EMAIL
+
+exit 0
+

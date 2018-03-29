@@ -1,0 +1,100 @@
+#!/bin/ksh
+
+# getmcelog - Retrieve the Machine Check Exception log file from all Linux servers
+# Owner: Carl Schelin
+
+PROGNAME="getmcelog"
+LOC=/usr/local/admin
+TODAY=`/usr/bin/date +"%a %b %e"`
+
+for i in `grep -v "^#" $LOC/etc/servers | grep Linux`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=80
+
+# Content here: scp the config file from here
+
+  CONTENT="mcelog"
+
+  if [[ -f $SVRPATH/$CONTENT.output ]]
+  then
+    rm $SVRPATH/$CONTENT.output
+  fi
+
+  /usr/bin/scp $SERVER:/var/log/$CONTENT $SVRPATH/$CONTENT.output &
+  PID=$!
+
+# we're only trying to make sure we're not waiting on a server that has 
+# gone down. So if a file has started copying, don't wait
+# then we'll have the waiting when a server is not accessible and time out 
+# in $TIMEOUT seconds.
+# this should speed up copying.
+
+#  if [[ ! -f $SVRPATH/$CONTENT.output ]]
+#  then
+#    while [[ $TIMEOUT -gt 0 ]]
+#    do
+#      /usr/bin/ps -p $PID
+#      /usr/bin/ps -p $PID > /dev/null 2>&1
+#      if [[ $? -ne 0 ]]
+#      then
+#        break
+#      fi
+#      echo $TIMEOUT
+#      TIMEOUT=$(($TIMEOUT - 1))
+#      sleep 1
+#    done
+#  fi
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+  if [[ $TIMEOUT -le 0 ]]
+  then
+    echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
+    echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
+    chmod 664 $SVRPATH/config.status
+    chmod 664 $SVRPATH/morning.status
+    kill -KILL $PID
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT.output ]
+  then
+    chmod 664 $SVRPATH/$CONTENT.output
+  fi
+
+# compare the "good" content with the currently captured output.
+#  if [[ -f $SVRPATH/$CONTENT.output ]]
+#  then
+#    if [[ -f $SVRPATH/$CONTENT.good ]]
+#    then
+#      /usr/bin/diff $SVRPATH/$CONTENT.output $SVRPATH/$CONTENT.good > $SVRPATH/$CONTENT.diff
+#      if [[ -s $SVRPATH/$CONTENT.diff ]]
+#      then
+#        echo "ERROR: $CONTENT differences. Check server." >> $SVRPATH/config.status
+#        echo "ERROR: $CONTENT differences. Check server." >> $SVRPATH/morning.status
+#      fi
+#    else
+#      echo "ERROR: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/config.status
+#      echo "ERROR: $SVRPATH/$CONTENT.good file not found." >> $SVRPATH/morning.status
+#    fi
+#  fi
+
+done
+
+exit 0
+

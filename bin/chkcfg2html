@@ -1,0 +1,129 @@
+#!/bin/ksh
+
+# chkcfg2html - performs a daily check to make sure the cfg2html file has been captured at the beginning of the month
+# Owner: Carl Schelin
+
+PROGNAME="chkcfg2html"
+DATE=`date +"%Y%m"`
+CFG="/var/apache2/htsecure/cfg2html"
+DDIR="$CFG/$DATE"
+LOC=/usr/local/admin
+
+if [[ ! -d $DDIR ]]
+then
+  mkdir $DDIR
+  chmod 775 $DDIR
+fi
+
+for i in `grep -v "^#" $LOC/etc/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+  SVRPATH="$LOC/servers/$SERVER"
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  if [[ ! -d $SVRPATH ]]
+  then
+    mkdir -p $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+# now parse out the date line for the index.html file
+# check and report daily if the cfg2html file does not exist.
+
+  if [[ -f $DDIR/$SERVER.html ]]
+  then
+    if [[ $OS = "Linux" ]]
+    then
+      CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+      DATE=`echo $CREATED | cut -f2 -d\ `
+    fi
+    if [[ $OS = "SunOS" ]]
+    then
+      CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+      DATE=`echo $CREATED | cut -f2 -d\ `
+    fi
+    if [[ $OS = "FreeBSD" ]]
+    then
+      CREATED=`grep "Date & Time" $DDIR/$SERVER.html`
+      DATE=`echo $CREATED | awk '{print $5" "$6" "$9}'`
+
+      MON=`echo $DATE | cut -f1 -d\ `
+      YEAR=`echo $DATE | cut -f3 -d\ `
+
+      case $MON in 
+        Jan) MON=01 ;;
+        Feb) MON=02 ;;
+        Mar) MON=03 ;;
+        Apr) MON=04 ;;
+        May) MON=05 ;;
+        Jun) MON=06 ;;
+        Jul) MON=07 ;;
+        Aug) MON=08 ;;
+        Sep) MON=09 ;;
+        Oct) MON=10 ;;
+        Nov) MON=11 ;;
+        Dec) MON=12 ;;
+      esac
+
+      DATE="$YEAR-$MON"
+
+    fi
+    if [[ $OS = "OSF1" ]]
+    then
+      CREATED=`grep "^Run on" $DDIR/$SERVER.html`
+      DATE=`echo $CREATED | awk '{print $4" "$5" "$8}'`
+
+      MON=`echo $DATE | cut -f1 -d\ `
+      YEAR=`echo $DATE | cut -f3 -d\ `
+
+      case $MON in 
+        Jan) MON=01 ;;
+        Feb) MON=02 ;;
+        Mar) MON=03 ;;
+        Apr) MON=04 ;;
+        May) MON=05 ;;
+        Jun) MON=06 ;;
+        Jul) MON=07 ;;
+        Aug) MON=08 ;;
+        Sep) MON=09 ;;
+        Oct) MON=10 ;;
+        Nov) MON=11 ;;
+        Dec) MON=12 ;;
+      esac
+
+      DATE="$YEAR-$MON"
+
+    fi
+    if [[ $OS = "HP-UX" ]]
+    then
+      CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+      DATE=`echo $CREATED | head -1 | awk '{print $2}'`
+    fi
+
+# break apart the captured date to get the year and month for comparison to the current month and date.
+    YEAR=`echo $DATE | cut -f1 -d\-`
+    MON=`echo $DATE | cut -f2 -d\-`
+
+    DATE="$YEAR-$MON"
+    CHKDATE=`date +"%Y-%m"`
+
+    if [[ ! $DATE = $CHKDATE ]]
+    then
+      echo "WARNING: $DDR/$SERVER.html is not current. ($PROGNAME)" >> $SVRPATH/config.status
+      echo "WARNING: $DDR/$SERVER.html is not current. ($PROGNAME)" >> $SVRPATH/morning.status
+      chmod 664 $SVRPATH/config.status
+      chmod 664 $SVRPATH/morning.status
+    fi
+  else
+    echo "WARNING: $DDR/$SERVER.html was not retrieved for this month. ($PROGNAME)"
+    echo "WARNING: $DDR/$SERVER.html was not retrieved for this month. ($PROGNAME)" >> $SVRPATH/config.status
+    echo "WARNING: $DDR/$SERVER.html was not retrieved for this month. ($PROGNAME)" >> $SVRPATH/morning.status
+    chmod 664 $SVRPATH/config.status
+    chmod 664 $SVRPATH/morning.status
+  fi
+
+done
+

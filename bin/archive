@@ -1,0 +1,16 @@
+#!/bin/ksh
+
+# archive servers
+# Carl Schelin
+$ADMIN=/usr/local/admin
+
+for i in `ls -l $ADMIN/servers/ | grep "^d" | awk '{print $9}'`
+do
+  OUTPUT=`egrep -i "^(#$i|$i):" $ADMIN/etc/servers | cut -f1 -d:`
+
+  if [[ -z $OUTPUT ]]
+  then
+    mv $ADMIN/servers/$i $ADMIN/archive/$i
+  fi
+done
+

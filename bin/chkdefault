@@ -1,0 +1,25 @@
+#!/bin/ksh
+
+ADMIN=/usr/local/admin
+if [[ -z $1 ]]
+then
+  CHKUSER=$USER
+else
+  CHKUSER=$1
+fi
+
+for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux | cut -f1 -d:`
+do
+
+  if [[ -f $ADMIN/servers/$i/chkserver.output ]]
+  then
+    OUTPUT=`grep 31m $ADMIN/servers/$i/chkserver.output | grep -i "${CHKUSER} account password is still set"`
+
+    if [[ ! -z $OUTPUT ]]
+    then
+      echo $i
+      echo $OUTPUT
+    fi
+  fi
+done
+

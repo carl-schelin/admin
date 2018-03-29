@@ -1,0 +1,96 @@
+#!/bin/ksh
+
+# getnofile - Special request for Barry Townsend for an incident
+# Owner: Carl Schelin
+# 
+# 8/21 Edited for Ashley Seifert for 911net incident
+
+PROGNAME="getnofile"
+LOC=/usr/local/admin
+BODY=""
+WHOCARES="paul.pietras@intrado.com"
+WHOCARES="WebApplicationsTeam@intrado.com boominathan.shanmugham2@intrado.com paul.pietras@intrado.com"
+
+for i in lnmtcodc9n11:Linux lnmtcodc9n21:Linux lnmtcodc9n31:Linux
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  OS=`echo $i|cut -f3 -d:`
+
+# Check to make sure the target directory exists
+# if not, create it and set the perms
+
+  SVRPATH="$LOC/servers/$SERVER"
+
+  if [ ! -d $SVRPATH ]
+  then
+    mkdir $SVRPATH
+    chmod 775 $SVRPATH
+  fi
+
+  TIMEOUT=180
+
+# Content here: scp the config file from here
+
+  CONTENT="jboss.nofile"
+
+  if [ -f $SVRPATH/$CONTENT ]
+  then
+    rm $SVRPATH/$CONTENT
+  fi
+
+  /usr/bin/scp $SERVER:/var/tmp/$CONTENT $SVRPATH 2>&1 &
+  PID=$!
+
+# wait for the specified number of seconds for scp to complete
+# if the timeout is exceeded, kill the process and move on to the next box
+
+# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
+  /usr/bin/perl -e 'select(undef,undef,undef,.2)'
+  /usr/bin/ps -p $PID > /dev/null 2>&1
+  if [[ $? -eq 0 ]]
+  then
+    while [[ $TIMEOUT -gt 0 ]]
+    do
+      /usr/bin/ps -p $PID > /dev/null 2>&1
+      if [[ $? -ne 0 ]]
+      then
+        break
+      fi
+      TIMEOUT=$(($TIMEOUT - 1))
+      sleep 1
+    done
+
+# if the timeout reaches 0, then the process was killed. Report something.
+
+    if [[ $TIMEOUT -le 0 ]]
+    then
+      kill -KILL $PID
+    fi
+  fi
+
+# if there's no output, delete the 0 byte file
+
+  if [ ! -s $SVRPATH/$CONTENT ]
+  then
+    rm $SVRPATH/$CONTENT
+  fi
+
+# set the perms as the last step
+
+  if [ -f $SVRPATH/$CONTENT ]
+  then
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+# build the email for the incident folks.
+  if [ -f $SVRPATH/$CONTENT ]
+  then
+    BODY="${BODY}${SERVER}: `cat ${SVRPATH}/${CONTENT} | tail -1`\n"
+  fi
+
+done
+
+echo $BODY | mailx -s "911net: Number of File Opens" $WHOCARES
+
+exit 0
+

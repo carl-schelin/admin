@@ -1,0 +1,25 @@
+#!/bin/ksh
+
+# delete temporary reports if they exist in the messages directory
+
+for i in `ls /usr/local/admin/logs/report/report.*`
+do
+  REPORT=`basename $i`
+
+  if [[ -f /usr/local/httpd/htsecure/messages/$REPORT ]]
+  then
+    echo "rm /usr/local/admin/logs/report/$REPORT"
+  fi
+done
+
+# now check for the current year in /usr/local/httpd/htsecure/messages, create it if missing.
+
+if [[ ! -d /usr/local/httpd/htsecure/messages/`date +"%Y"` ]]
+then
+  echo "mkdir /usr/local/httpd/htsecure/messages/`date +\"%Y\"`"
+fi
+
+# move any files older than 7 days into the year directory
+
+find /usr/local/httpd/htsecure/messages -name report.* -prune -ctime +7 -exec ls -ld {} \;
+
