@@ -1,0 +1,105 @@
+#!/usr/bin/perl
+#
+# chkprocesses - This script processes the exclude file against each servers process output file. 
+#
+
+$home="/usr/local/admin";
+$whocares="";
+$path="$home/servers";
+
+# looking for YYYYMMDD to be passed, otherwise pull from file
+$date = shift;
+if ($date == "") {
+  $date=`cat $path/messages.date`;
+}
+chomp $date;
+
+# copy the exclude files into the messages directory so folks can see 
+# what's being parsed.
+`cp $home/etc/processes.exclude /var/apache2/htsecure/processes`;
+
+#####
+# Nothing else should need to be changed after this point
+#####
+
+@servers=`grep -v "^#" $home/etc/servers`;
+
+# Retrieve the search strings
+@exclude=`grep -v "^#" $home/etc/processes.exclude`;
+
+# Remove the trailing \n's
+for ($i=0; $i<=$#exclude; $i++) {
+  chomp $exclude[$i];
+}
+
+# Create the log files for today
+print "$home/logs/logfile/pslog.$date\n";
+open (LOG,      ">$home/logs/logfile/pslog.$date") or die "Unable to open log file";
+open (EMAIL,    ">$home/logs/report/psreport.$date") or die "Unable to open report file";
+
+# Set up the start of the log files
+print LOG      "\n";
+print EMAIL    "\n";
+
+$startdate=`date`;
+print LOG      "BEGIN $startdate";
+print EMAIL    "BEGIN $startdate";
+
+for ($i=0; $i <= $#servers; $i++) {
+  chop $servers[$i];
+
+  ($svrname,$cluster,$os) = split(":", $servers[$i]);
+
+  print $svrname, "\n";
+
+  doServer($svrname);
+}
+
+$enddate=`date`;
+print LOG      "\nEND   $enddate\n";
+print EMAIL    "\nEND   $enddate\n";
+
+close EMAIL;
+close LOG;
+
+system("cp $home/logs/report/psreport.$date /var/apache2/htsecure/processes");
+
+exit 0;
+
+# Subroutine: doServer
+# Args:
+#   $server   - name of server where logs originated
+
+sub doServer {
+  $server = $_[0];  
+
+# Process the server logs
+
+  print LOG      "\nProcessing $server\n";
+  print EMAIL    "\nProcessing $server\n";
+
+# Create the hostname directory if it doesn't exist
+  if ( ! -d "$path/$server" ) {
+    mkdir "$path/$server",0775;
+  }
+
+  open (INPUT, "$path/$server/process.output") or print EMAIL "ERROR: Unable to open $path/$server/processes.output\n";
+  while (<INPUT>) {
+    chomp;
+
+# Scan the log and exclude the known messages
+    $dont=0;
+    for ($j=0; $j <= $#exclude; $j++) {
+      if ($_ =~ /$exclude[$j]/) {
+        $dont=1;
+      }
+    }
+    if (0 == $dont) {
+      print EMAIL $_, "\n";
+    }
+
+  }
+  close INPUT;
+
+}
+
