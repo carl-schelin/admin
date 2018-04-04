@@ -8,7 +8,7 @@
 #
 # 2016-02-04 - changing to import the chksys.import files. The data is stable and no reason to wait for a manual input
 
-ADMIN=/usr/local/admin
+ADMIN=/usr/local/httpd
 RUNBY=`/usr/xpg4/bin/id -u`
 WHOCARES=carl.schelin@intrado.com
 WHOCARES=unixadmins@intrado.com
