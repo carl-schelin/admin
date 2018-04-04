@@ -27,6 +27,8 @@ then
   rm $ADMIN/logs/chksys.log
 fi
 
+# for the settings.php file to work, you need to be in the same directory.
+cd $HTTPD/bin
 for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
 do
   if [[ -f $ADMIN/servers/$i/chksys.import ]]
