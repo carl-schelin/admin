@@ -1,0 +1,83 @@
+#!/bin/ksh
+
+ADMIN=/usr/local/admin
+OVMC=/export/home/ovmc/Mail
+
+MONTH=`date+"%m"`
+YEAR=`date +"%Y"`
+
+DATE[0]="${MONTH} 1"
+DATE[1]="${MONTH} 2"
+DATE[2]="${MONTH} 3"
+DATE[3]="${MONTH} 4"
+DATE[4]="${MONTH} 5"
+
+if [[ -f $ADMIN/logs/ovmsg.errors ]]
+then
+  rm $ADMIN/logs/ovmsg.errors
+fi
+
+if [[ -f $ADMIN/logs/ovmsg.negative ]]
+then
+  rm $ADMIN/logs/ovmsg.negative
+fi
+
+if [[ -f $ADMIN/logs/ovmsg.positive ]]
+then
+  rm $ADMIN/logs/ovmsg.positive
+fi
+
+for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+do
+  if [[ -f $ADMIN/servers/$i/chkopenview.output ]]
+  then
+# check for a failure of the tool to run
+    if [[ -s $ADMIN/servers/$i/chkopenview.output ]]
+    then
+      echo $i >> report.errors
+      cat $ADMIN/servers/$i/chkopenview.output >> $ADMIN/logs/ovmsg.errors
+    else
+      TESTSUCCESS=''
+      MAINSUCCESS=''
+      for j in `grep "^${i}:" $ADMIN/etc/servers | cut -f6 -d: | sed -e "s/,/ /g"`
+      do
+        for k in 0 1 2 3 4
+        do
+          OUTPUT=`grep $j $OVMC/alarms.output | egrep "${DATE[$k]}.*${YEAR}" | grep "Unix Monitoring Test"`
+          if [[ $OUTPUT != '' ]]
+          then
+            TESTSUCCESS=$OUTPUT
+          fi
+          OUTPUT=`grep $j $OVMC/alarms.output | grep "${YEAR}"`
+          if [[ $OUTPUT != '' ]]
+          then
+            MAINSUCCESS=$OUTPUT
+          fi
+        done
+      done
+      if [[ -z ${TESTSUCCESS} ]]
+      then
+        if [[ -z ${MAINSUCCESS} ]]
+        then
+          echo "$i failed to send a message and no other alarms have been received since Jan 1st." >> $ADMIN/logs/ovmsg.negative
+        else
+          echo "$i failed to send a message but other alarms have been received since Jan 1st." >> $ADMIN/logs/ovmsg.positive
+        fi
+      fi
+    fi
+  fi
+done
+
+echo "Openview Message errors:" > $ADMIN/logs/ovmsg.output
+echo "" >> $ADMIN/logs/ovmsg.output
+cat report.errors >> $ADMIN/logs/ovmsg.output
+echo "" >> $ADMIN/logs/ovmsg.output
+echo "System failed to have a test message cycle through." $ADMIN/logs/>> ovmsg.output
+sort report.negative | uniq $ADMIN/logs/>> ovmsg.output
+echo "" $ADMIN/logs/>> ovmsg.output
+echo "System failed to have a test message cycle through however other alarms exist in the logs." $ADMIN/logs/>> ovmsg.output
+sort report.positive | uniq $ADMIN/logs/>> ovmsg.output
+echo "" $ADMIN/logs/>> ovmsg.output
+
+cp $ADMIN/logs/ovmsg.output /usr/local/httpd/htsecure/reports/ovmsg.output
+
