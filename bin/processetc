@@ -176,22 +176,17 @@ do
 #runscript getarcconf
 #++++++++++++++++++++++++++++++++++++++++++
 
-# Sun specific command
 # checking for a failed disk
-  if [[ $OS = 'SunOS' ]]
+  CONTENT='arcconf.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
   then
-    CONTENT='arcconf.output'
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
 
-    if [ -f $TMPPATH/$CONTENT ]
-    then
-      cp $TMPPATH/$CONTENT $SVRPATH/
-      chmod 664 $SVRPATH/$CONTENT
+    compare_Content $SVRPATH $CONTENT
 
-      compare_Content $SVRPATH $CONTENT
-
-    fi
   fi
-
 
 #++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of getarray
