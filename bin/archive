@@ -2,15 +2,15 @@
 
 # archive servers
 # Carl Schelin
-$ADMIN=/usr/local/admin
+ADMIN=/usr/local/admin
 
-for i in `ls -l $ADMIN/servers/ | grep "^d" | awk '{print $9}'`
+for i in $(find ${ADMIN}/servers/. -type d -print | awk -F/ '{print $NF}')
 do
-  OUTPUT=`egrep -i "^(#$i|$i):" $ADMIN/etc/servers | cut -f1 -d:`
+  OUTPUT=$(egrep -i "^(#$i|$i):" ${ADMIN}/etc/servers | cut -f1 -d:)
 
-  if [[ -z $OUTPUT ]]
+  if [[ -z "${OUTPUT}" ]]
   then
-    mv $ADMIN/servers/$i $ADMIN/archive/$i
+    mv ${ADMIN}/servers/"${i}" ${ADMIN}/archive/"${i}"
   fi
 done
 
