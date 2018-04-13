@@ -566,26 +566,28 @@ ConfigText[33]="System IP isn't resolving correctly: "
 ConfigRegx[33]="doesn't resolve to.*in DNS"
 ConfigText[34]="System hostname isn't resolving correctly: "
 ConfigRegx[34]="unable to be found in DNS."
+ConfigText[35]="chkov is commented out: "
+ConfigRegx[35]="The Openview restart script is not active in root's cron"
 
 # warnings
-ConfigText[35]="Missing IP or Hostname in /etc/hosts: "
-ConfigRegx[35]="not in /etc/hosts"
-ConfigText[36]="Misconfigured Swap: "
-ConfigRegx[36]="Gig which is less than Memory which is "
+ConfigText[36]="Missing IP or Hostname in /etc/hosts: "
+ConfigRegx[36]="not in /etc/hosts"
 ConfigText[37]="Misconfigured Swap: "
-ConfigRegx[37]="Memory is.*but Swap is.*Gig."
-ConfigText[38]="cfg2html is not installed yet: "
-ConfigRegx[38]="cfg2html not installed"
-ConfigText[39]="rrdtool is not installed yet: "
-ConfigRegx[39]="rrdtool is not configured or running"
-ConfigText[40]="/etc/sudoers doesn't have the hostname alias: "
-ConfigRegx[40]="/etc/sudoers doesn't contain"
-ConfigText[41]="SELinux Active and Permissive: "
-ConfigRegx[41]="selinux is in Permissive mode"
-ConfigText[42]="Disk Space is major: "
-ConfigRegx[42]="has reached or exceeded 85"
+ConfigRegx[37]="Gig which is less than Memory which is "
+ConfigText[38]="Misconfigured Swap: "
+ConfigRegx[38]="Memory is.*but Swap is.*Gig."
+ConfigText[39]="cfg2html is not installed yet: "
+ConfigRegx[39]="cfg2html not installed"
+ConfigText[40]="rrdtool is not installed yet: "
+ConfigRegx[40]="rrdtool is not configured or running"
+ConfigText[41]="/etc/sudoers doesn't have the hostname alias: "
+ConfigRegx[41]="/etc/sudoers doesn't contain"
+ConfigText[42]="SELinux Active and Permissive: "
+ConfigRegx[42]="selinux is in Permissive mode"
+ConfigText[43]="Disk Space is major: "
+ConfigRegx[43]="has reached or exceeded 85"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43
 do
   DEBUGFILTER="${DEBUGFILTER}|${ConfigRegx[$i]}"
 done
@@ -807,7 +809,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -938,7 +940,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 35 36 37 38 39 40 41 42
+  for j in 36 37 38 39 40 41 42 43
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
