@@ -657,6 +657,26 @@ do
 # ps capture during run
 
 #++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of chkpolicy
+#chkpolicy
+#runscript chkpolicy
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking chkpolicy for missing policies
+  CONTENT='chkpolicy.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+
+#++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of getprtdiag
 #getprtdiag
 #runscript getprtdiag
