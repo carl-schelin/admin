@@ -272,12 +272,14 @@ OpenViewText[18]="Certificate status is blank: "
 OpenViewRegx[18]="Uncaught error:  "
 OpenViewText[19]="Unable to locate server in Inventory listing: "
 OpenViewRegx[19]="Unable to locate.*in chkserver.input file to verify Openview Configuration"
+OpenViewText[20]="Missing openview policies: "
+OpenViewRegx[20]="Openview reports no installed policies"
 
 # warnings
-OpenViewText[20]="Management Route is not set: "
-OpenViewRegx[20]="Route to.*missing."
+OpenViewText[21]="Management Route is not set: "
+OpenViewRegx[21]="Route to.*missing."
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21
 do
   DEBUGFILTER="${DEBUGFILTER}|${OpenViewRegx[$i]}"
 done
@@ -717,7 +719,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -859,7 +861,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 20
+  for j in 21
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
