@@ -49,10 +49,7 @@ then
 
   for i in $SEND
   do
-    if [[ $SEND -eq $TODAY ]]
-    then
-      cat $LOG | mailx -s "$SUBJECT" $WHOCARES
-    fi
+    cat $LOG | mailx -s "$SUBJECT" $WHOCARES
   done
 fi
 
