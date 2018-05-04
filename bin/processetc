@@ -921,6 +921,21 @@ do
     fi
   fi
 
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of spectre_meltdown
+#spectre_meltdown
+#runscript spectre_meltdown
+#++++++++++++++++++++++++++++++++++++++++++
+
+# getting the output of spectre/meltdown
+  CONTENT='spectre_meltdown.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
 done
 
 #++++++++++++++++++++++++++++++++++++++++++
