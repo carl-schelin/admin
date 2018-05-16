@@ -695,7 +695,7 @@ else
   cat $ADMIN/logs/chkstatus.log
 fi
 
-if [[ $DEBUG = 'no' ]] && [[ $GREP = '31m' ]]
+if [[ $DEBUG = 'no' ]] && [[ $GREP = '31m' ]] || [[ $GREP = '(31m|33m)' ]]
 then
   echo ""
   echo "User Issues:"
@@ -837,7 +837,7 @@ then
 fi
 
 
-if [[ $DEBUG = 'no' ]] && [[ $GREP = '33m' ]]
+if [[ $DEBUG = 'no' ]] && [[ $GREP = '33m' ]] || $GREP = "(31m|33m)" ]]
 then
   echo ""
   echo "User Issues:"
@@ -938,7 +938,7 @@ then
     CountValue=`grep -c "${SubMgrRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
     then
-      printf "%75s %4d %30s\n" "${SubMgrText[$j]}" "${CountValue}" "./chkstatus -s '${SubMgrRegx[$j]}'"
+      printf "%75s %4d %30s\n" "${SubMgrText[$j]}" "${CountValue}" "./chkstatus -t w -s '${SubMgrRegx[$j]}'"
     fi
   done
 
