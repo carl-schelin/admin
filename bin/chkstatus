@@ -837,7 +837,7 @@ then
 fi
 
 
-if [[ $DEBUG = 'no' ]] && [[ $GREP = '33m' ]] || $GREP = "(31m|33m)" ]]
+if [[ $DEBUG = 'no' ]] && [[ $GREP = '33m' ]] || [[ $GREP = "(31m|33m)" ]]
 then
   echo ""
   echo "User Issues:"
