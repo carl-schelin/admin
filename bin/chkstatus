@@ -315,13 +315,13 @@ NetBackupText[12]="Longmont port is not accessible:"
 NetBackupRegx[12]="10.32.138.14:1556"
 NetBackupText[13]="Longmont port is not accessible:"
 NetBackupRegx[13]="10.32.138.14:13724"
+NetBackupText[14]="The Master server for this zone isn't first: "
+NetBackupRegx[14]="The Master server.*is not the first SERVER entry"
 
-NetBackupText[14]="The bp.conf file has no or an incorrect CLIENT_NAME: "
-NetBackupRegx[14]="The CLIENT_NAME in /usr/openv/netbackup/bp.conf is"
-NetBackupText[15]="The bp.conf file is missing SERVER lines: "
-NetBackupRegx[15]="There is no.*entry in /usr/openv/netbackup/bp.con"
-NetBackupText[16]="The Master server for this zone isn't first: "
-NetBackupRegx[16]="The Master server.*is not the first SERVER entry"
+NetBackupText[15]="The bp.conf file has no or an incorrect CLIENT_NAME: "
+NetBackupRegx[15]="The CLIENT_NAME in /usr/openv/netbackup/bp.conf is"
+NetBackupText[16]="The bp.conf file is missing SERVER lines: "
+NetBackupRegx[16]="There is no.*entry in /usr/openv/netbackup/bp.con"
 
 for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
 do
@@ -739,7 +739,7 @@ then
 
   echo ""
   echo "Netbackup Agent Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
   do
     CountValue=`grep -c "${NetBackupRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -882,7 +882,7 @@ then
 
   echo ""
   echo "Netbackup Issues:"
-  for j in 14 15 16
+  for j in 15 16
   do
     CountValue=`grep -c "${NetBackupRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
