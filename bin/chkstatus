@@ -320,8 +320,10 @@ NetBackupText[14]="The bp.conf file has no or an incorrect CLIENT_NAME: "
 NetBackupRegx[14]="The CLIENT_NAME in /usr/openv/netbackup/bp.conf is"
 NetBackupText[15]="The bp.conf file is missing SERVER lines: "
 NetBackupRegx[15]="There is no.*entry in /usr/openv/netbackup/bp.con"
+NetBackupText[16]="The Master server for this zone isn't first: "
+NetBackupRegx[16]="The Master server.*is not the first SERVER entry"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
 do
   DEBUGFILTER="${DEBUGFILTER}|${NetBackupRegx[$i]}"
 done
@@ -880,7 +882,7 @@ then
 
   echo ""
   echo "Netbackup Issues:"
-  for j in 14 15
+  for j in 14 15 16
   do
     CountValue=`grep -c "${NetBackupRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
