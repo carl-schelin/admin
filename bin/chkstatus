@@ -7,6 +7,7 @@ DEBUG='no'
 ADMIN=/usr/local/admin
 GREP="31m"
 ERROR="Must be corrected due to vulnerability or system stability issue"
+COUNT=0
 
 usage() {
   cat << EOF
@@ -689,6 +690,9 @@ do
     fi
     SERVERTOTAL=$(( $SERVERTOTAL - 1 ))
     printf "%s," $SERVERTOTAL
+  else
+# number of servers where no output was generated
+    COUNT=$(( $COUNT + 1 ))
   fi
 done
 
@@ -987,6 +991,7 @@ then
 fi
 
 echo "Total Issues: `egrep -c ${GREP} $ADMIN/logs/chkstatus.log`"
+echo "Servers with no chkserver.output file: $COUNT"
 
 exit 0
 
