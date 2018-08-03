@@ -11,7 +11,7 @@ cd /usr/local/httpd/bin
 for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
 do
   
-  /usr/local/bin/php fingerprint.php $i > $OUTPUT
+  /usr/local/bin/php /usr/local/httpd/bin/fingerprint.php $i > $OUTPUT
 
   cat $OUTPUT
 
