@@ -18,6 +18,15 @@ fi
 
 cd /usr/local/httpd/bin
 
+echo "Legend:"
+echo "- i = insert user"
+echo "- u = update user info"
+echo "- I = insert group"
+echo "- U = update group info"
+echo "- m = insert group membership"
+echo "- M = update group membership info"
+echo ""
+
 for i in $TARGET
 do
   SERVER=$(echo "${i}" | cut -f1 -d:)
