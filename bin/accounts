@@ -29,12 +29,12 @@ do
 # if it's Friday, do a full import  
     if [[ $DATE = 5 ]]
     then
-      /usr/local/bin/php accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+      /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
 # if it's greater than 0 bytes, otherwise ignore it
     else
       if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
       then
-        /usr/local/bin/php accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+        /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
       fi
     fi
   fi
@@ -45,12 +45,12 @@ do
 # if it's Friday, do a full import  
     if [[ $DATE = 5 ]]
     then
-      /usr/local/bin/php accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
+      /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
 # if it's greater than 0 bytes, otherwise ignore it
     else
       if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
       then
-        /usr/local/bin/php accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
+        /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
       fi
     fi
   fi
