@@ -32,35 +32,52 @@ do
   SERVER=$(echo "${i}" | cut -f1 -d:)
   SID=$(echo "${i}" | cut -f7 -d:)
 
-# if it exists
-  if [[ -f $ADMIN/servers/$SERVER/passwd.diff ]]
+# no matter what, if it's Friday, do a full import of both passwd and group files
+  if [[ $DATE = 5 ]]
   then
-# if it's Friday, do a full import  
-    if [[ $DATE = 5 ]]
+    /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+    cp $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good
+    /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
+    cp $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good
+  else
+
+# now, for non-Fridays, we only want to do an import if the users or groups information has changed.
+# certainly if the password or group file doesn't have a .good file, import the data, done
+    if [[ ! -f $ADMIN/servers/$SERVER/passwd.good ]]
     then
       /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
-# if it's greater than 0 bytes, otherwise ignore it
-    else
-      if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
-      then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
-      fi
+      cp $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good
     fi
-  fi
+    if [[ ! -f $ADMIN/servers/$SERVER/group.good ]]
+    then
+      /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
+      cp $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good
+    fi
 
-# if it exists
-  if [[ -f $ADMIN/servers/$SERVER/group.diff ]]
-  then
-# if it's Friday, do a full import  
-    if [[ $DATE = 5 ]]
+# now we run a diff against the file and .good file.
+    diff $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good > $ADMIN/servers/$SERVER/passwd.diff
+    diff $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good > $ADMIN/servers/$SERVER/group.diff
+
+# if the .diff file is 0 bytes, delete it. This keeps it from loading again unless it's friday.
+    if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
+    then
+      rm $ADMIN/servers/$SERVER/passwd.diff
+    fi
+    if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
+    then
+      rm $ADMIN/servers/$SERVER/group.diff
+    fi
+
+# if the .diff file exists, then something has changed. Update the inventory
+    if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
+    then
+      /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+      cp $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good
+    fi
+    if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
     then
       /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
-# if it's greater than 0 bytes, otherwise ignore it
-    else
-      if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
-      then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
-      fi
+      cp $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good
     fi
   fi
 done
