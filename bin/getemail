@@ -2,6 +2,7 @@
 
 SAVED="/home/cschelin"
 
+# Per Marcus, script is located at: LMV08-FS04.
 #smbclient -U cschelin \\\\LMV08-FS01\\Departments [password]
 #cd "UNIX NT System"\Private\Email_Addresses
 #get CORP_List.txt
