@@ -189,28 +189,6 @@ do
   fi
 
 #++++++++++++++++++++++++++++++++++++++++++
-#++ Process the output of getarray
-#getarray
-#runscript getarray
-#++++++++++++++++++++++++++++++++++++++++++
-
-# Tru64 specific output
-# checking the output of volprint for a failed plex
-  if [[ $OS = 'OSF1' ]]
-  then
-    CONTENT='chkarray.output'
-
-    if [ -f $TMPPATH/$CONTENT ]
-    then
-      cp $TMPPATH/$CONTENT $SVRPATH/
-      chmod 664 $SVRPATH/$CONTENT
-
-      compare_Content $SVRPATH $CONTENT
-
-    fi
-  fi
-
-#++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of getbackups
 #getbackups
 #runscript getbackups
