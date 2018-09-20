@@ -18,7 +18,7 @@ echo "<body>" >> $PHP
 
 for i in `grep -v "^#" $LOC/etc/servers | cut -f1 -d:`
 do
-  if [[ -f $LOC/servers/$i/defunct.data ]]
+  if [[ -s $LOC/servers/$i/defunct.data ]]
   then
     echo "<p><b>$i</b><pre>" >> $PHP
     cat $LOC/servers/$i/defunct.data >> $PHP
