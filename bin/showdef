@@ -5,7 +5,7 @@ LOC=/usr/local/admin
 PHP=/usr/local/httpd/htsecure/reports/defunct.php
 
 echo "<?php" > $PHP
-echo "  include('../login/check.php');" >> $PHP
+echo "  include('../inventory/login/check.php');" >> $PHP
 echo "  check_login('3');" >> $PHP
 echo "?>" >> $PHP
 echo "<html>" >> $PHP
