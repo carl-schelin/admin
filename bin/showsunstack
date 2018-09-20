@@ -8,8 +8,8 @@ BGCOLOR="CCCCCC"
 PHP=/usr/local/httpd/htsecure/reports/sunstack.php
 
 echo "<?php" > $PHP
-echo "  include('settings.php'); >> $PHP
-echo "  include($Sitepath . '/login/check.php'); >> $PHP
+echo "  include('settings.php');" >> $PHP
+echo "  include($Sitepath . '/login/check.php');" >> $PHP
 echo "  check_login('3');" >> $PHP
 echo "?>" >> $PHP
 echo "<html>" >> $PHP
