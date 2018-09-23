@@ -575,6 +575,21 @@ do
 
 #runscript gettime
 
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getomsa
+#getomsa
+#runscript getomsa
+#++++++++++++++++++++++++++++++++++++++++++
+
+# Saving the version info for omsa.
+  CONTENT='chkomsa.out'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
 
 #++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of getpackages
@@ -924,6 +939,22 @@ done
 
 # getting the various versions files
   CONTENT='lockuser.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getroutes
+#getroutes
+#runscript getroutes
+#++++++++++++++++++++++++++++++++++++++++++
+
+# get the route information
+  CONTENT='routes'
 
   if [ -f $TMPPATH/$CONTENT ]
   then
