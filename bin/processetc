@@ -582,7 +582,7 @@ do
 #++++++++++++++++++++++++++++++++++++++++++
 
 # Saving the version info for omsa.
-  CONTENT='chkomsa.out'
+  CONTENT='omsa.version'
 
   if [ -f $TMPPATH/$CONTENT ]
   then
@@ -709,25 +709,6 @@ do
 
 
 #runscript getraid
-
-
-#++++++++++++++++++++++++++++++++++++++++++
-#++ Process the output of getroutetable
-#getroutetable
-#runscript getrouteable
-#++++++++++++++++++++++++++++++++++++++++++
-
-# get the route table information
-  CONTENT='routetable.output'
-
-  if [ -f $TMPPATH/$CONTENT ]
-  then
-    cp $TMPPATH/$CONTENT $SVRPATH/
-    chmod 664 $SVRPATH/$CONTENT
-
-    compare_Content $SVRPATH $CONTENT
-
-  fi
 
 
 #++++++++++++++++++++++++++++++++++++++++++
