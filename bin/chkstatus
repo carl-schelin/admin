@@ -692,6 +692,7 @@ do
     printf "%s," $SERVERTOTAL
   else
 # number of servers where no output was generated
+    NOSERVER="$NOSERVER $i"
     COUNT=$(( $COUNT + 1 ))
   fi
 done
@@ -991,7 +992,7 @@ then
 fi
 
 echo "Total Issues: `egrep -c ${GREP} $ADMIN/logs/chkstatus.log`"
-echo "Servers with no chkserver.output file: $COUNT"
+echo "Servers with no chkserver.output file: $COUNT ($NOSERVER)"
 
 exit 0
 
