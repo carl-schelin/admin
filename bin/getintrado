@@ -153,6 +153,7 @@ runscript processetc
 #runscript getprocesses
 #runscript getprtdiag
 #runscript getpwck
+#runscript getraid
 #runscript getroutes
 #runscript getsan
 #runscript getsecurity
@@ -184,7 +185,6 @@ runscript getif
 
 # being reviewed for inclusion to the process etc script
 
-runscript getraid
 runscript getscanraid
 runscript getsaraid
 runscript mkgoodsudo
