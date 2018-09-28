@@ -650,6 +650,63 @@ do
 # ps capture during run
 
 #++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of chkhpacucli
+#chkhpacucli
+#runscript chkhpacucli
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking hpacucli output for raid issues
+  CONTENT='hpacucli.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of chkhpssacli
+#chkhpssacli
+#runscript chkhpssacli
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking hpssacli output for raid issues
+  CONTENT='hpssacli.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of chkomreport
+#chkomreport
+#runscript chkomreport
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking omreport raid output for issues
+  CONTENT='omreport.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of chkpolicy
 #chkpolicy
 #runscript chkpolicy
@@ -708,7 +765,23 @@ do
   fi
 
 
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getraid
+#getraid
 #runscript getraid
+#++++++++++++++++++++++++++++++++++++++++++
+
+# Checking for raidctl output
+  CONTENT='raidctl.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
 
 
 #++++++++++++++++++++++++++++++++++++++++++
@@ -738,6 +811,25 @@ do
 
 # checking the san output
   CONTENT='chksan.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getsautil
+#getsautil
+#runscript getsautil
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking sautil output for raid issues
+  CONTENT='sautil.output'
 
   if [ -f $TMPPATH/$CONTENT ]
   then
@@ -816,8 +908,26 @@ do
 
 
 #runscript getspace
-#runscript getsudo
 #runscript getsudoers
+
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getsudoers
+#getsudoers
+#runscript getsudoers
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the sync output
+  CONTENT='chksudoers.output'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+
+    compare_Content $SVRPATH $CONTENT
+
+  fi
+
 
 #++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of getsync
