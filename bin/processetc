@@ -928,29 +928,8 @@ do
 
   fi
 
-
-#++++++++++++++++++++++++++++++++++++++++++
-#++ Process the output of getsync
-#getsync
-#runscript getsync
-#++++++++++++++++++++++++++++++++++++++++++
-
-# checking the sync output
-  CONTENT='chksync.output'
-
-  if [ -f $TMPPATH/$CONTENT ]
-  then
-    cp $TMPPATH/$CONTENT $SVRPATH/
-    chmod 664 $SVRPATH/$CONTENT
-
-    compare_Content $SVRPATH $CONTENT
-
-  fi
-
-
 #runscript getsys
 #runscript getusers
-
 
 #++++++++++++++++++++++++++++++++++++++++++
 #++ Process the output of getversions
