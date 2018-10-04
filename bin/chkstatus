@@ -973,7 +973,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 40 41 42 43 44 45 46 47 48 49
+  for j in 40 41 42 43 44 45 46 47 48
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
