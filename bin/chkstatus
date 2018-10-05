@@ -239,50 +239,58 @@ OpenViewText[1]="OpenView should be installed but is not: "
 OpenViewRegx[1]="OpenView is not installed"
 OpenViewText[2]="Server has no Openview Certificates: "
 OpenViewRegx[2]="No Certificates found."
-OpenViewText[3]="bbcutil is unable to ping Longmont: "
-OpenViewRegx[3]="bbcutil is unable to ping Longmont"
-OpenViewText[4]="bbcutil is unable to ping Miami:"
-OpenViewRegx[4]="bbcutil is unable to ping Miami"
-OpenViewText[5]="Openview reports Aborted processes:"
-OpenViewRegx[5]="Openview agent is running: Aborted:"
-OpenViewText[6]="Failed to contact Openview servers: "
-OpenViewRegx[6]="Unable to contact Certificate Client."
-OpenViewText[7]="Openview denied certificate request: "
-OpenViewRegx[7]="Certificate request was denied."
-OpenViewText[8]="Openview certificate request is in the queue: "
-OpenViewRegx[8]="Certificate request is pending."
-OpenViewText[9]="Unable to locate server in Inventory listing: "
-OpenViewRegx[9]="Unable to locate.*in chkserver.input file to verify Route Configuration"
-OpenViewText[10]="Misconfigured bbc.http: "
-OpenViewRegx[10]="Configuration: bbc.http.CLIENT_BIND_ADDR=.*is not"
-OpenViewText[11]="Misconfigured bbc.http: "
-OpenViewRegx[11]="Configuration: bbc.http.SERVER_BIND_ADDR=.*is not"
-OpenViewText[12]="Misconfigured eaagt: "
-OpenViewRegx[12]="Configuration: eaagt OPC_IP_ADDRESS=.*is not"
-OpenViewText[13]="Misconfigured eaagt: "
-OpenViewRegx[13]="Configuration: eaagt OPC_MGMT_SERVER=.*is not"
-OpenViewText[14]="Misconfigured eaagt: "
-OpenViewRegx[14]="Configuration: eaagt OPC_PRIMARY_MGR=.*is not"
-OpenViewText[15]="Misconfigured sec.cm.client: "
-OpenViewRegx[15]="Configuration: sec.cm.client CERTIFICATE_SERVER=.*is not"
-OpenViewText[16]="Misconfigured sec.core.auth: "
-OpenViewRegx[16]="Configuration: sec.core.auth MANAGER=.*is not"
-OpenViewText[17]="Misconfigured bbc.cb: "
-OpenViewRegx[17]="Configuration: bbc.cb SERVER_BIND_ADDR=.*is not"
-OpenViewText[18]="Certificate status is blank: "
-OpenViewRegx[18]="Uncaught error:  "
-OpenViewText[19]="Unable to locate server in Inventory listing: "
-OpenViewRegx[19]="Unable to locate.*in chkserver.input file to verify Openview Configuration"
-OpenViewText[20]="Missing openview policies: "
-OpenViewRegx[20]="Openview reports no installed policies"
+OpenViewText[3]="Longmont monitoring site not pingable: "
+OpenViewRegx[3]="Monitoring site lnmtcodcom1vip.*pingable"
+OpenViewText[4]="Miami monitoring site not pingable: "
+OpenViewRegx[4]="Monitoring site miamfldcom1vip.*is not pingable
+OpenViewText[5]="Longmont monitoring site port is not accessible: "
+OpenViewRegx[5]="Monitoring site lnmtcodcom1vip.*is not accessible"
+OpenViewText[6]="Miami monitoring site port not accessible: "
+OpenViewRegx[6]="Monitoring site miamfldcom1vip.*is not accessible"
+OpenViewText[7]="bbcutil is unable to ping Longmont: "
+OpenViewRegx[7]="bbcutil is unable to ping lnmtcodcom1vip.scc911.com"
+OpenViewText[8]="bbcutil is unable to ping Miami:"
+OpenViewRegx[8]="bbcutil is unable to ping miamcodcom1vip.scc911.com"
+OpenViewText[9]="Openview reports Aborted processes:"
+OpenViewRegx[9]="Openview agent is running: Aborted:"
+OpenViewText[10]="Failed to contact Openview servers: "
+OpenViewRegx[10]="Unable to contact Certificate Client."
+OpenViewText[11]="Openview denied certificate request: "
+OpenViewRegx[11]="Certificate request was denied."
+OpenViewText[12]="Openview certificate request is in the queue: "
+OpenViewRegx[12]="Certificate request is pending."
+OpenViewText[13]="Unable to locate server in Inventory listing: "
+OpenViewRegx[13]="Unable to locate.*in chkserver.input file to verify Route Configuration"
+OpenViewText[14]="Misconfigured bbc.http: "
+OpenViewRegx[14]="Configuration: bbc.http.CLIENT_BIND_ADDR=.*is not"
+OpenViewText[15]="Misconfigured bbc.http: "
+OpenViewRegx[15]="Configuration: bbc.http.SERVER_BIND_ADDR=.*is not"
+OpenViewText[16]="Misconfigured eaagt: "
+OpenViewRegx[16]="Configuration: eaagt OPC_IP_ADDRESS=.*is not"
+OpenViewText[17]="Misconfigured eaagt: "
+OpenViewRegx[17]="Configuration: eaagt OPC_MGMT_SERVER=.*is not"
+OpenViewText[18]="Misconfigured eaagt: "
+OpenViewRegx[18]="Configuration: eaagt OPC_PRIMARY_MGR=.*is not"
+OpenViewText[19]="Misconfigured sec.cm.client: "
+OpenViewRegx[19]="Configuration: sec.cm.client CERTIFICATE_SERVER=.*is not"
+OpenViewText[20]="Misconfigured sec.core.auth: "
+OpenViewRegx[20]="Configuration: sec.core.auth MANAGER=.*is not"
+OpenViewText[21]="Misconfigured bbc.cb: "
+OpenViewRegx[21]="Configuration: bbc.cb SERVER_BIND_ADDR=.*is not"
+OpenViewText[22]="Certificate status is blank: "
+OpenViewRegx[22]="Uncaught error:  "
+OpenViewText[23]="Unable to locate server in Inventory listing: "
+OpenViewRegx[23]="Unable to locate.*in chkserver.input file to verify Openview Configuration"
+OpenViewText[24]="Missing openview policies: "
+OpenViewRegx[24]="Openview reports no installed policies"
 
 # warnings
-OpenViewText[21]="Management Route is not set: "
-OpenViewRegx[21]="Route to.*missing."
-OpenViewText[22]="The Openview agent is configured to not start: "
-OpenViewRegx[22]="The Openview agent is configured to not start"
+OpenViewText[25]="Management Route is not set: "
+OpenViewRegx[25]="Route to.*missing."
+OpenViewText[26]="The Openview agent is configured to not start: "
+OpenViewRegx[26]="The Openview agent is configured to not start"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26
 do
   DEBUGFILTER="${DEBUGFILTER}|${OpenViewRegx[$i]}"
 done
@@ -355,15 +363,22 @@ do
 done
 
 
-# minor alerts (yellow)
-OpnetText[0]="Opnet should be installed but is not: "
-OpnetRegx[0]="OpNet is not installed"
-OpnetText[1]="OpNet agent is not running: "
-OpnetRegx[1]="OpNet is not running"
-OpnetText[2]="OpNet agent cannot reach Console: "
-OpnetRegx[2]="OpNet Server.*is not accessible"
+OpnetText[0]="OpNet server lmh08-smp01 is not pingable: "
+OpnetRegx[0]="OpNet Server lmh08-smp01.*is not pingable"
+OpnetText[1]="OpNet server lmh08-smp02 is not pingable: "
+OpnetRegx[1]="OpNet Server lnh08-smp02.*is not pingable"
+OpnetText[2]="OpNet server lnmt1euasneon10 is not pingable: "
+OpnetRegx[2]="OpNet Server lnmt1euasneon10.*is not pingable"
 
-for i in 0 1 2
+# minor alerts (yellow)
+OpnetText[3]="Opnet should be installed but is not: "
+OpnetRegx[3]="OpNet is not installed"
+OpnetText[4]="OpNet agent is not running: "
+OpnetRegx[4]="OpNet is not running"
+OpnetText[5]="OpNet agent cannot reach Console: "
+OpnetRegx[5]="OpNet Server.*is not accessible"
+
+for i in 0 1 2 4 5
 do
   DEBUGFILTER="${DEBUGFILTER}|${OpnetRegx[$i]}"
 done
@@ -738,7 +753,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -755,6 +770,18 @@ then
     if [[ $CountValue -gt 0 ]]
     then
       printf "%75s %4d %30s\n" "${NetBackupText[$j]}" "${CountValue}" "./chkstatus -s '${NetBackupRegx[$j]}'"
+    fi
+  done
+
+
+  echo ""
+  echo "Opnet Agent Issues:"
+  for j in 0 1 2
+  do
+    CountValue=`grep -c "${OpnetRegx[$j]}" $ADMIN/logs/chkstatus.log`
+    if [[ $CountValue -gt 0 ]]
+    then
+      printf "%75s %4d %30s\n" "${OpnetText[$j]}" "${CountValue}" "./chkstatus -t w -s '${OpnetRegx[$j]}'"
     fi
   done
 
@@ -880,7 +907,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 21 22
+  for j in 25 26
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -916,7 +943,7 @@ then
 
   echo ""
   echo "Opnet Agent Issues:"
-  for j in 0 1 2
+  for j in 3 4 5
   do
     CountValue=`grep -c "${OpnetRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
