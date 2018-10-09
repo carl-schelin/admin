@@ -596,12 +596,12 @@ ConfigText[38]="Mandatory program is not configured to start on boot: "
 ConfigRegx[38]="wildfly is not enabled"
 ConfigText[39]="Mandatory program is not running: "
 ConfigRegx[39]="wildfly is not running"
+ConfigText[40]="The guid check hasn't been verified yet: "
+ConfigRegx[40]="chkguid.valid file doesn't exist"
+ConfigText[41]="The suid check hasn't been verified yet: "
+ConfigRegx[41]="chksuid.valid file doesn't exist"
 
 # warnings
-ConfigText[40]="Misconfigured Swap: "
-ConfigRegx[40]="Memory is.*but Swap is.*Gig."
-ConfigText[41]="cfg2html is not installed yet: "
-ConfigRegx[41]="cfg2html not installed"
 ConfigText[42]="rrdtool is not installed yet: "
 ConfigRegx[42]="rrdtool is not configured or running"
 ConfigText[43]="/etc/sudoers doesn't have the hostname alias: "
@@ -616,8 +616,14 @@ ConfigText[47]="Missing IP or Hostname in /etc/hosts: "
 ConfigRegx[47]="not in /etc/hosts"
 ConfigText[48]="Misconfigured Swap: "
 ConfigRegx[48]="Gig which is less than Memory which is "
+ConfigText[49]="Misconfigured Swap: "
+ConfigRegx[49]="Memory is.*but Swap is.*Gig."
+ConfigText[50]="cfg2html is not installed yet: "
+ConfigRegx[50]="cfg2html not installed"
+ConfigText[51]="Number of spares is not 4: "
+ConfigRegx[51]="Incorrect number of spares found"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51
 do
   DEBUGFILTER="${DEBUGFILTER}|${ConfigRegx[$i]}"
 done
@@ -861,7 +867,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -1004,7 +1010,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 40 41 42 43 44 45 46 47 48
+  for j in 42 43 44 45 46 47 48 49 50 51
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
