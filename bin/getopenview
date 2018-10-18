@@ -34,7 +34,7 @@ do
     rm $SVRPATH/$CONTENT
   fi
 
-  /usr/bin/scp $SERVER:/opt/intrado/var/$CONTENT $SVRPATH 2>&1 &
+  /usr/bin/scp $SERVER:/opt/intrado/etc/$CONTENT $SVRPATH 2>&1 &
   PID=$!
 
 # wait for the specified number of seconds for scp to complete
