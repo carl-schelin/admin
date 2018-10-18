@@ -13,15 +13,15 @@ if [[ ! -d /opt/intrado ]]
 then
   echo "Intrado scripts have not been installed."
 else
-  if [[ ! -f /opt/intrado/var/intrado.log ]]
+  if [[ ! -f /opt/intrado/etc/intrado.log ]]
   then
     echo "Intrado script has not been run yet."
   else
-    RUNDATE=`ls -l /opt/intrado/var/intrado.log | awk '{print $7}'`
+    RUNDATE=`ls -l /opt/intrado/etc/intrado.log | awk '{print $7}'`
     TODAY=`date +"%d"`
     if [[ $RUNDATE -ne $TODAY ]]
     then
-      echo "/opt/intrado/var/intrado.log didn't run today (last ran: ${RUNDATE})"
+      echo "/opt/intrado/etc/intrado.log didn't run today (last ran: ${RUNDATE})"
     else
       if [[ ! -f /opt/intrado/etc/chkserver.output ]]
       then

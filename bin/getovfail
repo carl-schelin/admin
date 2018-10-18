@@ -13,7 +13,7 @@ do
       rm $ADMIN/servers/$i/$j
     fi
 
-    scp $i:/opt/intrado/var/$j $ADMIN/servers/$i/
+    scp $i:/opt/intrado/etc/$j $ADMIN/servers/$i/
   done
 done
 
