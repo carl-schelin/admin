@@ -613,7 +613,7 @@ ConfigRegx[45]="Data found on spare drive"
 ConfigText[46]="Static route file incorrectly set: "
 ConfigRegx[46]="line 'dev' is incorrect: via."
 ConfigText[47]="The intrado script is disabled: "
-ConfigRegx[47]="The intrado script is disabled in root's cron
+ConfigRegx[47]="The intrado script is disabled in root's cron"
 
 # warnings
 ConfigText[48]="Missing IP or Hostname in /etc/hosts: "
