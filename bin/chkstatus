@@ -7,7 +7,10 @@ DEBUG='no'
 ADMIN=/usr/local/admin
 GREP="31m"
 ERROR="Must be corrected due to vulnerability or system stability issue"
+NOSERVER=""
+INCOMPLETE=""
 COUNT=0
+INCOUNT=0
 
 usage() {
   cat << EOF
@@ -762,6 +765,15 @@ do
     fi
     SERVERTOTAL=$(( $SERVERTOTAL - 1 ))
     printf "%s," $SERVERTOTAL
+
+# check for complete script runs
+    grep "^+++chkserver script run completed" ${ADMIN}/servers/${i}/chkserver.output > /dev/null
+    if [[ $? -eq 0 ]]
+    then
+      INCOMPLETE="${INCOMPLETE} $i"
+      INCOUNT=$(( $INCOUNT + 1 ))
+    fi
+
   else
 # number of servers where no output was generated
     NOSERVER="$NOSERVER $i"
@@ -1077,6 +1089,7 @@ fi
 
 echo "Total Issues: `egrep -c ${GREP} $ADMIN/logs/chkstatus.log`"
 echo "Servers with no chkserver.output file: $COUNT ($NOSERVER)"
+echo "Servers with incomplete chkserver.output files: $INCOUNT ($INCOMPLETE)"
 
 exit 0
 
