@@ -768,7 +768,7 @@ do
 
 # check for complete script runs
     grep "^+++chkserver script run completed" ${ADMIN}/servers/${i}/chkserver.output > /dev/null
-    if [[ $? -eq 0 ]]
+    if [[ $? -ne 0 ]]
     then
       INCOMPLETE="${INCOMPLETE} $i"
       INCOUNT=$(( $INCOUNT + 1 ))
