@@ -5,9 +5,33 @@
 # 
 
 PROGNAME="gethostkey"
-LOC=/usr/local/admin
+ADMIN=/usr/local/admin
+LOG=$ADMIN/logs
 
-for i in `grep -v "^#" $LOC/etc/servers`
+if [[ -f $LOG/hostkey.password ]]
+then
+  rm $LOG/hostkey.password
+fi
+if [[ -f $LOG/hostkey.timedout ]]
+then
+  rm $LOG/hostkey.timedout
+fi
+if [[ -f $LOG/hostkey.timeout ]]
+then
+  rm $LOG/hostkey.timeout
+fi
+
+echo "Legend:"
+echo "h - No Hostkey"
+echo "i - No FQDN Hostkey"
+echo ". - Waiting for response from server"
+echo "* - Responded, exiting loop"
+echo "p - Password requested"
+echo "d - Timedout"
+echo "t - Timeout"
+echo ""
+
+for i in `grep -v "^#" $ADMIN/etc/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   FQDN=`echo $i|cut -f2 -d:`
@@ -22,7 +46,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="$LOG/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -41,22 +65,22 @@ do
     rm $SVRPATH/$CONTENT.output
   fi
 
-# we want both host keys; can be 'host,' or 'host '
+# we want both host keys
   PID=''
-  EXISTS=`egrep -i "^$SERVER(,| )" ~/.ssh/known_hosts`
+  EXISTS=`grep -i "^$SERVER" ~/.ssh/known_hosts`
   if [[ -z $EXISTS ]]
   then
-    echo "$SERVER(,| ): No hostkey in known_hosts file; retrieving"
-    echo "[$EXISTS]"
-    $LOC/bin/hostkey -user unixsvc -host $SERVER > $SVRPATH/$CONTENT.output 2>&1 &
+#    echo "$SERVER: No hostkey"
+    echo -n "h"
+    $ADMIN/bin/hostkey -user unixsvc -host $SERVER > $SVRPATH/$CONTENT.output 2>&1 &
     PID=$!
   fi
-  EXISTS=`egrep -i "^$SERVER$FQDN(,| )" ~/.ssh/known_hosts`
+  EXISTS=`grep -i "^$SERVER$FQDN" ~/.ssh/known_hosts`
   if [[ -z $EXISTS ]]
   then
-    echo "$SERVER$FQDN(,| ): No hostkey in known_hosts file; retrieving"
-    echo "[$EXISTS]"
-    $LOC/bin/hostkey -user unixsvc -host $SERVER$FQDN >> $SVRPATH/$CONTENT.output 2>&1 &
+#    echo "$SERVER$FQDN: No hostkey"
+    echo -n "f"
+    $ADMIN/bin/hostkey -user unixsvc -host $SERVER$FQDN >> $SVRPATH/$CONTENT.output 2>&1 &
     PID=$!
   fi
 
@@ -72,9 +96,11 @@ do
     then
       while [[ $TIMEOUT -gt 0 ]]
       do
+        echo -n "."
         /usr/bin/ps -p $PID > /dev/null 2>&1
         if [[ $? -ne 0 ]]
         then
+          echo -n "*"
           break
         fi
         TIMEOUT=$(($TIMEOUT - 1))
@@ -125,7 +151,8 @@ do
     then
       echo "WARNING: Login to server from unix service account requires a password." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service account requires a password." >> $SVRPATH/morning.status
-      echo "$SERVER Password"
+      echo -n "p"
+      echo "$SERVER Password" >> $LOG/hostkey.password
     fi
 
     OUTPUT=`grep "sshing to" $SVRPATH/$CONTENT.output`
@@ -133,7 +160,8 @@ do
     then
       echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/morning.status
-      echo "$SERVER Timedout"
+      echo -n "d"
+      echo "$SERVER Timedout" >> $LOG/hostkey.timedout
     fi
 
     OUTPUT=`grep "ssh to" $SVRPATH/$CONTENT.output`
@@ -141,7 +169,8 @@ do
     then
       echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/morning.status
-      echo "$SERVER Timeout"
+      echo -n "t"
+      echo "$SERVER Timeout" >> $LOG/hostkey.timeout
     fi
   fi
 
