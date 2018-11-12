@@ -1,4 +1,4 @@
-#!/opt/sfw/bin/expect
+#!/bin/expect
 
 # hostkey
 # Carl Schelin
