@@ -50,7 +50,7 @@ do
 
   if [ ! -d $SVRPATH ]
   then
-    mkdir $SVRPATH
+    mkdir -p $SVRPATH
     chmod 775 $SVRPATH
   fi
 
