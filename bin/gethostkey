@@ -23,7 +23,7 @@ fi
 
 echo "Legend:"
 echo "h - No Hostkey"
-echo "i - No FQDN Hostkey"
+echo "f - No FQDN Hostkey"
 echo ". - Waiting for response from server"
 echo "* - Responded, exiting loop"
 echo "p - Password requested"
@@ -146,6 +146,15 @@ do
   if [[ -f $SVRPATH/$CONTENT.output ]]
   then
 
+    OUTPUT=`grep "login prompt" $SVRPATH/$CONTENT.output`
+    if [[ ! -z $OUTPUT ]]
+    then
+      echo "WARNING: Login to server from unix service account requiring a login." >> $SVRPATH/config.status
+      echo "WARNING: Login to server from unix service account requiring a login." >> $SVRPATH/morning.status
+      echo -n "p"
+      echo "$SERVER Login" >> $LOG/hostkey.login
+    fi
+
     OUTPUT=`grep "password prompt" $SVRPATH/$CONTENT.output`
     if [[ ! -z $OUTPUT ]]
     then
@@ -167,10 +176,10 @@ do
     OUTPUT=`grep "ssh to" $SVRPATH/$CONTENT.output`
     if [[ ! -z $OUTPUT ]]
     then
-      echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/config.status
-      echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/morning.status
+      echo "WARNING: Login to server from unix service unable to connect." >> $SVRPATH/config.status
+      echo "WARNING: Login to server from unix service unable to connect." >> $SVRPATH/morning.status
       echo -n "t"
-      echo "$SERVER Timeout" >> $LOG/hostkey.timeout
+      echo "$SERVER Connect" >> $LOG/hostkey.connect
     fi
   fi
 
