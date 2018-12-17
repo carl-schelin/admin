@@ -3,7 +3,7 @@
 # this script checks the various systems for disk space issues on DBA owned systems.
 
 WHOCARES="carl.schelin@intrado.com"
-WHOCARES="DBAGroup@intrado.com,oracle-apps@datavail.com"
+WHOCARES="DBAGroup@intrado.com,incidents@datavail.com"
 LOC=/usr/local/admin
 LOG="$LOC/output/status.dba"
 SEND="0"
