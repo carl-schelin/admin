@@ -47,7 +47,7 @@ do
   fi	
 
 
-  for j in .config bin etc
+  for j in .config bin run.d etc
   do
 
 # set the timeout value
