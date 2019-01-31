@@ -314,17 +314,19 @@ OpenViewText[37]="bbcutil is unable to ping Longmont OpsBridge VIP: "
 OpenViewRegx[37]="bbcutil is unable to ping omiagenttraffic.*10.32.134.9"
 OpenViewText[38]="bbcutil is unable to ping Miami OpsBridge VIP: "
 OpenViewRegx[38]="bbcutil is unable to ping omiagenttraffic.*10.32.6.9"
+OpenViewText[39]="Unable to ping OpsBridge IP: "
+OpenViewRegx[39]="lnmt1dwasobprb3.*not pingable"
 
 
 # warnings
-OpenViewText[39]="Management Route is not set: "
-OpenViewRegx[39]="Route to.*missing."
-OpenViewText[40]="The Openview agent is configured to not start: "
-OpenViewRegx[40]="The Openview agent is configured to not start"
-OpenViewText[41]="Test message sent today:"
-OpenViewRegx[41]="Sent a Minor test message to the Unix"
+OpenViewText[40]="Management Route is not set: "
+OpenViewRegx[40]="Route to.*missing."
+OpenViewText[41]="The Openview agent is configured to not start: "
+OpenViewRegx[41]="The Openview agent is configured to not start"
+OpenViewText[42]="Test message sent today:"
+OpenViewRegx[42]="Sent a Minor test message to the Unix"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42
 do
   DEBUGFILTER="${DEBUGFILTER}|${OpenViewRegx[$i]}"
 done
@@ -819,7 +821,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -973,7 +975,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 39 40 41
+  for j in 40 41 42
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
