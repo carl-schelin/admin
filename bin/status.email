@@ -12,19 +12,26 @@
 # 09/02/2014 - Split the email into three reports due to size.
 # 11/28/2016 - Remove the email to the teams
 
-WHOCARES=""
-WHOCARES="carl.schelin@intrado.com"
-WHOCARES="carl.schelin@intrado.com kzupan@intrado.com paul.pietras@intrado.com tom.cooper@intrado.com james.noyes@itrado.com"
-WHOCARES="unixadmins@intrado.com"
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 MON=`date +"%m"`
 MONTH=`date +"%B"`
 DAY=`date +"%d"`
 YEAR=`date +"%Y"`
-LOC=/usr/local/admin
-LOG="$LOC/output/status"
-USER="$LOC/output/status.user"
-WARNING="$LOC/output/status.warning"
-ERROR="$LOC/output/status.error"
+LOG="${SCRIPTS}/output/status"
+USER="${SCRIPTS}/output/status.user"
+WARNING="${SCRIPTS}/output/status.warning"
+ERROR="${SCRIPTS}/output/status.error"
 HTML="/var/apache2/htsecure/status/status.${YEAR}${MON}${DAY}.html"
 # activate to see additional messages on the command line. If debug is active, e-mail will not be sent
 #DEBUG="Yes"
@@ -74,11 +81,11 @@ echo "on the perceived severity. Resolving the problem consists of going in to t
 echo "file over the same named <b>.good</b> file." >> $HTML
 echo "" >> $HTML
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -z "$DEBUG" ]; then echo "Server: $SERVER"; fi
 
@@ -206,7 +213,7 @@ do
 # check the status of the messages file.
   if [ ! -z "$DEBUG" ]; then echo "Checking messages"; fi
 
-  MSGDATE=`cat $LOC/servers/messages.date`
+  MSGDATE=`cat ${SCRIPTS}/servers/messages.date`
 
   if [[ -f $SVRPATH/messages.$MSGDATE ]]
   then
