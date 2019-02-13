@@ -8,36 +8,43 @@
 #
 # 2016-02-04 - changing to import the chksys.import files. The data is stable and no reason to wait for a manual input
 
-ADMIN=/usr/local/admin
-HTTPD=/usr/local/httpd
-RUNBY=`/usr/xpg4/bin/id -u`
-WHOCARES=carl.schelin@intrado.com
-WHOCARES=unixadmins@intrado.com
-LOG=$ADMIN/logs/chksys.log
-ERRORS=$ADMIN/logs/chksys.errors
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
 
-if [[ $RUNBY != 5000 ]]
+if [[ ! -f ${DIRNAME}/../.config ]]
 then
-  echo "Script must be run by unixsvc Service account."
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
   exit 1
 fi
 
-if [[ -f $ADMIN/logs/chksys.log ]]
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+LOG=${SCRIPTS_LOGS}/chksys.log
+ERRORS=${SCRIPTS_LOGS}/logs/chksys.errors
+
+if [[ ${RUNBY} != 5000 ]]
 then
-  rm $ADMIN/logs/chksys.log
+  echo "Script must be run by the unixsvc Service account."
+  exit 1
+fi
+
+if [[ -f ${LOG} ]]
+then
+  rm ${LOG}
 fi
 
 # for the settings.php file to work, you need to be in the same directory.
-cd $HTTPD/bin
-for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+cd ${HTTPD}/bin
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers | cut -f1 -d:`
 do
-  if [[ -f $ADMIN/servers/$i/chksys.import ]]
+  if [[ -f ${SCRIPTS}/servers/${i}/chksys.import ]]
   then
     echo "$i"
-    $HTTPD/bin/import.php $ADMIN/servers/$i/chksys.import >> $LOG
+    ${HTTPD}/bin/import.php ${SCRIPTS}/servers/${i}/chksys.import >> $LOG
   else
-    echo "$i!"
-    echo "Missing chksys.import: $i" >> $LOG
+    echo "${i}!"
+    echo "Missing chksys.import: ${i}" >> $LOG
   fi
 done
 
@@ -47,8 +54,8 @@ done
 OUTPUT=`egrep -v "(uuid|system|filesystem|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found "`
 egrep -v "(uuid|system|filesystem|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found " | sort > $ERRORS
 
-if [[ ! -z $OUTPUT ]]
+if [[ ! -z ${OUTPUT} ]]
 then
-  cat $ERRORS | mailx -s "chksys Import Issues" $WHOCARES
+  cat ${ERRORS} | mailx -s "chksys Import Issues" ${WHOCARES}
 fi
 
