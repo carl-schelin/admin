@@ -2,10 +2,20 @@
 
 # this script checks the various systems for disk space issues on DBA owned systems.
 
-WHOCARES="carl.schelin@intrado.com"
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 WHOCARES="DBAGroup@intrado.com,incidents@datavail.com"
-LOC=/usr/local/admin
-LOG="$LOC/output/status.dba"
+LOG="${SCRIPTS}/output/status.dba"
 SEND="0"
 TODAY=`date +"%w"`
 
@@ -14,10 +24,10 @@ then
   rm $LOG
 fi
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ -f $SVRPATH/config.dba.status ]
   then
