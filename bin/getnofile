@@ -5,11 +5,21 @@
 # 
 # 8/21 Edited for Ashley Seifert for 911net incident
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 PROGNAME="getnofile"
-LOC=/usr/local/admin
 BODY=""
-WHOCARES="paul.pietras@intrado.com"
-WHOCARES="WebApplicationsTeam@intrado.com boominathan.shanmugham2@intrado.com paul.pietras@intrado.com"
+WHOCARES="WebApplicationsTeam@intrado.com boominathan.shanmugham2@intrado.com"
 
 for i in lnmtcodc9n11:Linux lnmtcodc9n21:Linux lnmtcodc9n31:Linux
 do
@@ -19,7 +29,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -90,7 +100,7 @@ do
 
 done
 
-echo $BODY | mailx -s "911net: Number of File Opens" $WHOCARES
+echo $BODY | mailx -s "911net: Number of File Opens" ${WHOCARES}
 
 exit 0
 
