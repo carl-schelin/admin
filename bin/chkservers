@@ -10,12 +10,20 @@
 # 2015-07-30 Carl: Added the ability for dbas to query their servers and get morning reports on server up time.
 # 2015-08-03 Carl: Added in a bit to check and see if the script is actually running
 
-PID=$$
-RUNBY=`/usr/xpg4/bin/id -u`
-PROGNAME="chkservers"
-LOC=/usr/local/admin
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
 
-echo "$1:$2:$3" >> /var/tmp/chkservers.carl.output
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PID=$$
+PROGNAME="chkservers"
 
 CHKSERVERS=all
 FROM=''
@@ -48,8 +56,7 @@ fi
   
 # by default, Unix
 TEAM="Unix"
-SERVERFILE=$LOC/etc/servers
-WHOCARES="UnixAdmins@intrado.com"
+SERVERFILE=${SCRIPTS_ETC}/servers
 LOG=/var/tmp/unix.servers.output
 CHKPID=/var/tmp/unix.servers.pid
 MAIL=/var/tmp/unix.servers.mail
@@ -61,8 +68,7 @@ then
   if [[ ! -z $OUTPUT ]]
   then
     TEAM="Unix"
-    SERVERFILE=$LOC/etc/servers
-    WHOCARES="UnixAdmins@intrado.com"
+    SERVERFILE=${SCRIPTS_ETC}/servers
     LOG=/var/tmp/unix.servers.output
     CHKPID=/var/tmp/unix.servers.pid
     MAIL=/var/tmp/unix.servers.mail
@@ -75,7 +81,7 @@ then
     if [[ ! -z $OUTPUT ]]
     then
       TEAM="WebApps"
-      SERVERFILE=$LOC/etc/servers.web
+      SERVERFILE=${SCRIPTS_ETC}/servers.web
       WHOCARES="WebApplicationsTeam@intrado.com"
       LOG=/var/tmp/webapps.servers.output
       CHKPID=/var/tmp/webapps.servers.pid
@@ -89,7 +95,7 @@ then
       if [[ ! -z $OUTPUT ]]
       then
         TEAM="DBAs"
-        SERVERFILE=$LOC/etc/servers.dba
+        SERVERFILE=${SCRIPTS_ETC}/servers.dba
         WHOCARES="DBAGroup@intrado.com"
         LOG=/var/tmp/dbagroup.servers.output
         CHKPID=/var/tmp/dbagroup.servers.pid
@@ -102,8 +108,7 @@ then
 # can't find $FROM in the admins.email files so it must be a server or an email that isn't in one of the files.
 # the error in the server check will bail and email back to the sender if a bogus email address
         TEAM="Unix"
-        SERVERFILE=$LOC/etc/servers
-        WHOCARES="UnixAdmins@intrado.com"
+        SERVERFILE=${SCRIPTS_ETC}/servers
         LOG=/var/tmp/unix.servers.output
         CHKPID=/var/tmp/unix.servers.pid
         MAIL=/var/tmp/unix.servers.mail
@@ -209,7 +214,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -297,9 +302,9 @@ then
   if [[ $SINGLESERVER = "yes" ]]
   then
     echo "$SERVERLIST was successfully contacted" | /usr/bin/tee $MAIL
-    if [[ -f $LOC/servers/$SERVERLIST/uptime.output ]]
+    if [[ -f ${SCRIPTS}/servers/$SERVERLIST/uptime.output ]]
     then
-      cat $LOC/servers/$SERVERLIST/uptime.output | /usr/bin/tee -a $MAIL
+      cat ${SCRIPTS}/servers/$SERVERLIST/uptime.output | /usr/bin/tee -a $MAIL
     else
       echo "WARNING: The unixsvc account was unable to run the uptime command via ssh. History shows the unixsvc account has been disabled. Please investigate." | /usr/bin/tee -a $MAIL
     fi
