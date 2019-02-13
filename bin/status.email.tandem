@@ -10,14 +10,23 @@
 # 01/28/2009 - Added check for iostat to only report if diff file is not empty, i.e. new or additional errors TO
 # 01/30/2009 - Added check for WARIGN from config.status TO
 
-WHOCARES=""
-WHOCARES="paul.pietras@intrado.com"
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 MON=`date +"%m"`
 MONTH=`date +"%B"`
 DAY=`date +"%d"`
 YEAR=`date +"%Y"`
-LOC=/usr/local/admin
-LOG="$LOC/output/status.tandem"
+LOG="${SCRIPTS}/output/status.tandem"
 HTML="/var/apache2/htsecure/status/status.tandem.${YEAR}${MON}${DAY}.html"
 # activate to see additional messages on the command line. If debug is active, e-mail will not be sent
 #DEBUG="Yes"
@@ -52,11 +61,11 @@ echo "on the perceived severity. Resolving the problem consists of going in to t
 echo "file over the same named <b>.good</b> file." >> $HTML
 echo "" >> $HTML
 
-for i in `grep -v "^#" $LOC/etc/servers.tandem | grep HP-UX`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers.tandem | grep HP-UX`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -z "$DEBUG" ]; then echo "Server: $SERVER"; fi
 
@@ -172,7 +181,7 @@ do
 # check the status of the messages file.
   if [ ! -z "$DEBUG" ]; then echo "Checking messages"; fi
 
-  MSGDATE=`cat $LOC/servers/messages.date`
+  MSGDATE=`cat ${SCRIPTS}/servers/messages.date`
 
   if [[ -f $SVRPATH/messages.$MSGDATE ]]
   then
