@@ -4,9 +4,17 @@
 # Carl Schelin
 # Scan the chkserver.output files for all Red Hat servers for kubernetes errors.
 
-ADMIN=/usr/local/admin
-WHOCARES="cschelin@west.com"
-WHOCARES="unixadmins@intrado.com"
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
 
 # possible errors so far discovered:
 ERRORS="(Container.*has failed"
@@ -17,12 +25,12 @@ ERRORS="${ERRORS}|Namespace nead-nq-service is reporting errors"
 ERRORS="${ERRORS}|Node.*is currently not in Ready state"
 ERRORS="${ERRORS})"
 
-for i in `grep -v "^#" $ADMIN/etc/servers | egrep "(kube|knode)" | cut -f1 -d:`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers | egrep "(kube|knode)" | cut -f1 -d:`
 do
-  egrep "${ERRORS}" $ADMIN/servers/$i/chkserver.output > /dev/null
+  egrep "${ERRORS}" ${SCRIPTS}/servers/${i}/chkserver.output > /dev/null
   if [[ $? = 0 ]]
   then
-    EMAIL="${EMAIL}${i}`egrep "${ERRORS}" $ADMIN/servers/$i/chkserver.output`\n"
+    EMAIL="${EMAIL}${i}`egrep "${ERRORS}" ${SCRIPTS}/servers/${i}/chkserver.output`\n"
   fi
 done
 
