@@ -3,9 +3,19 @@
 # chkmounts - Check the status of mounted file systems on Linux systems
 # Owner: Carl Schelin
 
-RUNBY=`/usr/xpg4/bin/id -u`
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 PROGNAME="chkmounts"
-LOC=/usr/local/admin
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
@@ -13,7 +23,7 @@ then
   exit 0
 fi
 
-for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux | cut -f1 -d:`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers | grep Linux | cut -f1 -d:`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -22,7 +32,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then

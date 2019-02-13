@@ -17,12 +17,22 @@
 # 10/9/13 - CS - Add the -d option so you can select the month's index.html 
 #   file to be rebuilt
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 CFG="/var/apache2/htsecure/cfg2html"
 DATE=`date +"%Y%m"`
 FORCE="no"
-LOC=/usr/local/admin
 PROGNAME="getcfg2html"
-RUNBY=`/usr/xpg4/bin/id -u`
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
@@ -32,7 +42,7 @@ fi
 
 FORCE="no"
 REBUILD="no"
-SERVERLIST=`grep -v "^#" $LOC/etc/servers`
+SERVERLIST=`grep -v "^#" ${SCRIPTS_ETC}/servers`
 
 while getopts d:fhrs: VARS
 do
@@ -45,7 +55,7 @@ do
        ;;
     r) REBUILD="yes"
        ;;
-    s) SERVERLIST=`grep "^${OPTARG}:" $LOC/etc/servers`
+    s) SERVERLIST=`grep "^${OPTARG}:" ${SCRIPTS_ETC}/servers`
        HTML=""
        ;;
   esac
@@ -96,7 +106,7 @@ for i in $SERVERLIST
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
 # some servers are slow to respond (infloas1 for example)
   TIMEOUT=90

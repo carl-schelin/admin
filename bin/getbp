@@ -1,10 +1,8 @@
 #!/bin/ksh
 
 DATE=`date`
-LOC=/usr/local/admin
 BGCOLOR="blue"
-PHP=/usr/local/httpd/htsecure/reports/bpconf.php
-RUNBY=`/usr/xpg4/bin/id -u`
+PHP=${HTTPD}/htsecure/reports/bpconf.php
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
@@ -90,7 +88,7 @@ echo "<?php
   <th class=\"ui-state-default\">VERBOSE</th>
 </tr>" > $PHP
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
 do
 
   SERVER=`echo $i | cut -f1 -d:`
@@ -101,7 +99,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then

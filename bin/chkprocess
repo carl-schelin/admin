@@ -3,10 +3,20 @@
 # chkprocess - Retrieve the ps output and email
 # Owner: Carl Schelin
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 PID=$$
-RUNBY=`/usr/xpg4/bin/id -u`
 PROGNAME="chkprocess"
-LOC=/usr/local/admin
 
 # passed is
 # server name
@@ -29,7 +39,7 @@ fi
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-SVRPATH="$LOC/servers/$SERVER"
+SVRPATH="${SCRIPTS}/servers/$SERVER"
 
 if [ ! -d $SVRPATH ]
 then

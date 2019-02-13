@@ -4,8 +4,6 @@
 # Owner: Carl Schelin
 
 PROGNAME="putintrado"
-LOC=/usr/local/admin
-RUNBY=`/usr/xpg4/bin/id -u`
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
@@ -16,7 +14,7 @@ fi
 # start time of the push
 date
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   DOMAIN=`echo $i|cut -f2 -d:`
@@ -27,7 +25,7 @@ do
 
   echo $SERVER
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -55,9 +53,9 @@ do
 
     if [[ $j = '.config' ]]
     then
-      /usr/bin/scp -r $LOC/install/intrado/.config $TARGET:/opt/intrado/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/intrado/.config $TARGET:/opt/intrado/ &
     else
-      /usr/bin/scp -r $LOC/install/intrado/$j/* $TARGET:/opt/intrado/$j/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/intrado/$j/* $TARGET:/opt/intrado/$j/ &
     fi
     PID=$!
 
@@ -96,7 +94,7 @@ do
 done
 
 # finally, recreate the kickstart install file
-cd /usr/local/admin/install
+cd ${SCRIPTS}/install
 rm intrado.tar.gz
 tar cfv intrado.tar intrado
 gzip -9 intrado.tar

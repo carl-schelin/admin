@@ -94,7 +94,7 @@ do
 
   if [[ -f $SVRPATH/$CONTENT ]]
   then
-    /usr/bin/cat $SVRPATH/$CONTENT | /usr/xpg4/bin/tr "[:upper:]" "[:lower:]" | /usr/bin/sort | /usr/bin/uniq >> $CHECK
+    cat $SVRPATH/$CONTENT | tr "[:upper:]" "[:lower:]" | sort | uniq >> $CHECK
   fi
 
 done

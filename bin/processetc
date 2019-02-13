@@ -4,8 +4,6 @@
 # Owner: Carl Schelin
 
 PROGNAME="processetc"
-LOC=/usr/local/admin
-RUNBY=`/usr/xpg4/bin/id -u`
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
@@ -44,7 +42,7 @@ compare_Content() {
 
 # Now run through the server list and process the files
 
-for i in `/usr/bin/grep -v "^#" $LOC/etc/servers`
+for i in `/usr/bin/grep -v "^#" ${SCRIPTS_ETC}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -53,7 +51,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -62,10 +60,10 @@ do
   fi
 
 # Set up the temporary location for output files
-  TMPPATH="$LOC/tmp/etc"
+  TMPPATH="${SCRIPTS}/tmp/etc"
 
 # Be in the right directory
-  cd $LOC/tmp
+  cd ${SCRIPTS}/tmp
 
 # Remove the tmp/etc directory
   if [[ -d $TMPPATH ]]
