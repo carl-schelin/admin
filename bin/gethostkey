@@ -7,6 +7,12 @@
 PROGNAME="gethostkey"
 ADMIN=/usr/local/admin
 LOG=$ADMIN/logs
+DEBUG="no"
+
+if [[ ! -z $1 ]]
+then
+  DEBUG="yes"
+fi
 
 if [[ -f $LOG/hostkey.password ]]
 then
@@ -21,6 +27,7 @@ then
   rm $LOG/hostkey.timeout
 fi
 
+echo "This script only checks servers that aren't in the unixsvc .ssh/known_hosts file"
 echo "Legend:"
 echo "h - No Hostkey"
 echo "f - No FQDN Hostkey"
@@ -70,16 +77,24 @@ do
   EXISTS=`grep -i "^$SERVER" ~/.ssh/known_hosts`
   if [[ -z $EXISTS ]]
   then
-#    echo "$SERVER: No hostkey"
-    echo -n "h"
+    if [[ $DEBUG = 'yes' ]]
+    then
+      echo "$SERVER: No hostkey"
+    else
+      printf "%s" "h"
+    fi
     $ADMIN/bin/hostkey -user unixsvc -host $SERVER > $SVRPATH/$CONTENT.output 2>&1 &
     PID=$!
   fi
   EXISTS=`grep -i "^$SERVER$FQDN" ~/.ssh/known_hosts`
   if [[ -z $EXISTS ]]
   then
-#    echo "$SERVER$FQDN: No hostkey"
-    echo -n "f"
+    if [[ $DEBUG = 'yes' ]]
+    then
+      echo "$SERVER$FQDN: No hostkey"
+    else
+      printf "%s" "f"
+    fi
     $ADMIN/bin/hostkey -user unixsvc -host $SERVER$FQDN >> $SVRPATH/$CONTENT.output 2>&1 &
     PID=$!
   fi
@@ -96,11 +111,11 @@ do
     then
       while [[ $TIMEOUT -gt 0 ]]
       do
-        echo -n "."
+        printf "%s" "."
         /usr/bin/ps -p $PID > /dev/null 2>&1
         if [[ $? -ne 0 ]]
         then
-          echo -n "*"
+          printf "%s" "*"
           break
         fi
         TIMEOUT=$(($TIMEOUT - 1))
@@ -151,7 +166,7 @@ do
     then
       echo "WARNING: Login to server from unix service account requiring a login." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service account requiring a login." >> $SVRPATH/morning.status
-      echo -n "p"
+      printf "%s" "p"
       echo "$SERVER Login" >> $LOG/hostkey.login
     fi
 
@@ -160,7 +175,7 @@ do
     then
       echo "WARNING: Login to server from unix service account requires a password." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service account requires a password." >> $SVRPATH/morning.status
-      echo -n "p"
+      printf "%s" "p"
       echo "$SERVER Password" >> $LOG/hostkey.password
     fi
 
@@ -169,7 +184,7 @@ do
     then
       echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service account timed out." >> $SVRPATH/morning.status
-      echo -n "d"
+      printf "%s" "d"
       echo "$SERVER Timedout" >> $LOG/hostkey.timedout
     fi
 
@@ -178,7 +193,7 @@ do
     then
       echo "WARNING: Login to server from unix service unable to connect." >> $SVRPATH/config.status
       echo "WARNING: Login to server from unix service unable to connect." >> $SVRPATH/morning.status
-      echo -n "t"
+      printf "%s" "t"
       echo "$SERVER Connect" >> $LOG/hostkey.connect
     fi
   fi
