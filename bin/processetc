@@ -3,6 +3,18 @@
 # processetc - Process the various output files placed in each server's /opt/intrado/etc directory
 # Owner: Carl Schelin
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
 PROGNAME="processetc"
 
 if [[ ! $RUNBY -eq 5000 ]]
