@@ -1,0 +1,108 @@
+#!/usr/bin/bash
+
+# escalation - Report on a specific set of discovered issues
+# Carl Schelin
+
+ADMIN=/usr/local/admin
+GREP="(31m|33m)"
+ERROR="(Must be corrected due to vulnerability or system stability issue|Setting should be reviewed and corrected if appropriate)"
+LOG="${ADMIN}/logs/escalation.log"
+WHOCARES="cschelin@west.com"
+WHOCARES="unixadmins@intrado.com"
+
+ESCALATION="("
+
+Error_Text[0]="Disk Suite problem identified by metadb: "
+Error_Regx[0]="Disk Suite metadb error on"
+Error_Text[1]="Interface failed: "
+Error_Regx[1]="Failed Interface found."
+Error_Text[2]="Disk Space is critical: "
+Error_Regx[2]="has reached or exceeded 95"
+Error_Text[3]="Disk Suite metastat error: "
+Error_Regx[3]="Disk Suite metastat error"
+Error_Text[4]="Drive failure discovered: "
+Error_Regx[4]="Failed drives found"
+Error_Text[5]="Failing drives found: "
+Error_Regx[5]="Stale.*drives found"
+Error_Text[6]="Disk Space is major: "
+Error_Regx[6]="has reached or exceeded 85"
+Error_Text[7]="Container failure: "
+Error_Regx[7]="Container.*has failed"
+Error_Text[8]="Namespace.*is reporting errors: "
+Error_Regx[8]="Namespace.*is reporting errors:"
+Error_Text[9]="Node is not Ready: "
+Error_Regx[9]="Node.*is currently not in Ready state"
+Error_Text[10]="etcd back end is not healthy: "
+Error_Regx[10]="etcd cluster is not healthy"
+Error_Text[11]="Unable to query the API Server: "
+Error_Regx[11]="apiserver VIP query failed"
+Error_Text[12]="Unable to use curl to access the local api server: "
+Error_Regx[12]="Local apiserver query failed"
+
+Pipe=""
+for i in 0 1 2 3 4 5 6 7 8 9 10
+do
+  ESCALATION="${ESCALATION}${Pipe}${Error_Regx[$i]}"
+  Pipe="|"
+done
+
+ESCALATION="${ESCALATION})"
+
+if [[ -f ${LOG} ]]
+then
+  rm ${LOG}
+fi
+
+NOREPORT=""
+INCOMPLETE=""
+OLDREPORT=""
+
+DATECHECK=`date +"%Y%m%d"`
+
+echo "Escalation Dashboard: https://incojs01.scc911.com/inventory/manage/manage.php?group=1&product=0" > $LOG
+echo "" >> $LOG
+
+for i in `grep -v "^#" ${ADMIN}/etc/servers | cut -f1 -d:`
+do
+  echo $i
+  scp ${i}:/opt/intrado/etc/chkserver.output ${ADMIN}/servers/${i}/
+  if [[ -f ${ADMIN}/servers/${i}/chkserver.output ]]
+  then
+# only process if the report is completed
+# +++chkserver script run completed: 20190426 012604
+    grep "^+++chkserver script run completed:" ${ADMIN}/servers/${i}/chkserver.output > /dev/null
+    if [[ $? -eq 0 ]]
+    then
+# now only process if the date is current
+      grep "^+++chkserver script run completed: ${DATECHECK}" ${ADMIN}/servers/${i}/chkserver.output > /dev/null
+      if [[ $? -eq 0 ]]
+      then
+        egrep "${GREP}" ${ADMIN}/servers/${i}/chkserver.output | perl -pe 's/\x1b\[[0-9;]*m//g' | egrep -v "${ERROR}" | egrep "${ESCALATION}" > /dev/null
+        if [[ $? = 0 ]]
+        then
+          echo ${i} >> ${LOG}
+          egrep "${GREP}" ${ADMIN}/servers/${i}/chkserver.output | perl -pe 's/\x1b\[[0-9;]*m//g' | egrep -v "${ERROR}" | egrep "${ESCALATION}" >> ${LOG}
+        fi
+      else
+        OLDREPORT="${OLDREPORT} ${i} (`grep "^+++chkserver" ${ADMIN}/servers/${i}/chkserver.output | awk '{print $5}'`)"
+      fi
+    else
+      INCOMPLETE="${INCOMPLETE} ${i}"
+    fi
+  else
+    NOREPORT="${NOREPORT} ${i}"
+  fi
+done
+
+echo "" >> ${LOG}
+echo "Servers with outdated chkserver.output file: ${OLDREPORT}" >> ${LOG}
+echo "" >> ${LOG}
+echo "Servers with an incomplete chkserver.output file: ${INCOMPLETE}" >> ${LOG}
+echo "" >> ${LOG}
+echo "Servers missing the chkserver.output file: ${NOREPORT}" >> ${LOG}
+echo "" >> ${LOG}
+
+cat ${LOG} | mailx -s "Escalation Report" ${WHOCARES}
+
+exit 0
+
