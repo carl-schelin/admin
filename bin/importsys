@@ -21,7 +21,7 @@ fi
 . "${DIRNAME}"/../.config
 
 LOG=${SCRIPTS_LOGS}/chksys.log
-ERRORS=${SCRIPTS_LOGS}/logs/chksys.errors
+ERRORS=${SCRIPTS_LOGS}/chksys.errors
 
 if [[ ${RUNBY} != 5000 ]]
 then
