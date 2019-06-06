@@ -41,7 +41,8 @@ do
   if [[ -f ${SCRIPTS}/servers/${i}/chksys.import ]]
   then
     echo "$i"
-    ${HTTPD}/bin/import.php ${SCRIPTS}/servers/${i}/chksys.import >> $LOG
+    cd ${HTTPD}/bin
+    ./import.php ${SCRIPTS}/servers/${i}/chksys.import >> $LOG
   else
     echo "${i}!"
     echo "Missing chksys.import: ${i}" >> $LOG
