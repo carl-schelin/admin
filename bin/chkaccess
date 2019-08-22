@@ -1,0 +1,63 @@
+#!/bin/ksh
+
+# chkaccess - Script reports on any servername entries that are not in the unixsvc .ssh/known_hosts file
+# this lets someone on the team resolve this so all servers are served.
+
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="chkaccess"
+WHOCARES="cschelin@west.com"
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+if [[ -f ${SCRIPTS_VAR}/chkaccess.output ]]
+then
+  rm ${SCRIPTS_VAR}/chkaccess.output
+fi
+
+# check the FQDN entry since that's what's used for pulling and pushing information to the servers
+for i in $(grep -v "^#" ${SCRIPTS_ETC}/servers | awk -F: '{print $1"."$2}')`
+do
+  grep -i $i ~/.ssh/known_hosts > /dev/null
+  if [[ $? -ne 0 ]]
+  then
+    echo $i >> ${SCRIPTS_VAR}/chkaccess.output
+  fi
+done
+
+# then check the hostname as other scripts and general accessess might use the hostname
+for i in $(grep -v "^#" ${SCRIPTS_ETC}/servers | awk -F: '{print $1}')`
+do
+  grep -i $i ~/.ssh/known_hosts > /dev/null
+  if [[ $? -ne 0 ]]
+  then
+    echo $i >> ${SCRIPTS_VAR}/chkaccess.output
+  fi
+done
+
+# now tell folks.
+if [[ -f ${SCRIPTS_VAR}/chkaccess.output ]]
+then
+  echo "The following server names were not found in the unixsvc .ssh/known_hosts file. This generally indicates a new server was added but no one has logged in as unixsvc yet. This will delay the daily script updates to the listed servers plus delay the retrieval of data for the reports." > ${SCRIPTS_VAR}/chkaccess.email
+  echo "" >> ${SCRIPTS_VAR}/chkaccess.email
+  echo "You need to log in to the unixsvc account on incojs01 and then ssh to the servers listed below to register the hostkey for each new server." >> ${SCRIPTS_VAR}/chkaccess.email
+  echo "" >> ${SCRIPTS_VAR}/chkaccess.email
+  cat ${SCRIPTS_VAR}/chkaccess.output >> ${SCRIPTS_VAR}/chkaccess.email
+
+  cat ${SCRIPTS_VAR}/chkaccess.email | mailx -s "Service Account unixsvc Access Report" "${WHOCARES}"
+fi
+
