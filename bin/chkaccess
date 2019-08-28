@@ -24,9 +24,9 @@ then
   exit 0
 fi
 
-if [[ -f ${SCRIPTS_VAR}/chkaccess.output ]]
+if [[ -f ${SCRIPTS_LOGS}/chkaccess.output ]]
 then
-  rm ${SCRIPTS_VAR}/chkaccess.output
+  rm ${SCRIPTS_LOGS}/chkaccess.output
 fi
 
 # check the FQDN entry since that's what's used for pulling and pushing information to the servers
@@ -35,29 +35,31 @@ do
   grep -i $i ~/.ssh/known_hosts > /dev/null
   if [[ $? -ne 0 ]]
   then
-    echo $i >> ${SCRIPTS_VAR}/chkaccess.output
+    echo "Missing: $i"
+    echo $i >> ${SCRIPTS_LOGS}/chkaccess.output
   fi
 done
 
 # then check the hostname as other scripts and general accessess might use the hostname
-for i in $(grep -v "^#" ${SCRIPTS_ETC}/servers | awk -F: '{print $1}')`
+for i in $(grep -v "^#" ${SCRIPTS_ETC}/servers | awk -F: '{print $1}')
 do
   grep -i $i ~/.ssh/known_hosts > /dev/null
   if [[ $? -ne 0 ]]
   then
-    echo $i >> ${SCRIPTS_VAR}/chkaccess.output
+    echo "Missing: $i"
+    echo $i >> ${SCRIPTS_LOGS}/chkaccess.output
   fi
 done
 
 # now tell folks.
-if [[ -f ${SCRIPTS_VAR}/chkaccess.output ]]
+if [[ -f ${SCRIPTS_LOGS}/chkaccess.output ]]
 then
-  echo "The following server names were not found in the unixsvc .ssh/known_hosts file. This generally indicates a new server was added but no one has logged in as unixsvc yet. This will delay the daily script updates to the listed servers plus delay the retrieval of data for the reports." > ${SCRIPTS_VAR}/chkaccess.email
-  echo "" >> ${SCRIPTS_VAR}/chkaccess.email
-  echo "You need to log in to the unixsvc account on incojs01 and then ssh to the servers listed below to register the hostkey for each new server." >> ${SCRIPTS_VAR}/chkaccess.email
-  echo "" >> ${SCRIPTS_VAR}/chkaccess.email
-  cat ${SCRIPTS_VAR}/chkaccess.output >> ${SCRIPTS_VAR}/chkaccess.email
+  echo "The following server names were not found in the unixsvc .ssh/known_hosts file. This generally indicates a new server was added but no one has logged in as unixsvc yet. This will delay the daily script updates to the listed servers plus delay the retrieval of data for the reports." > ${SCRIPTS_LOGS}/chkaccess.email
+  echo "" >> ${SCRIPTS_LOGS}/chkaccess.email
+  echo "You need to log in to the unixsvc account on incojs01 and then ssh to the servers listed below to register the hostkey for each new server." >> ${SCRIPTS_LOGS}/chkaccess.email
+  echo "" >> ${SCRIPTS_LOGS}/chkaccess.email
+  cat ${SCRIPTS_LOGS}/chkaccess.output >> ${SCRIPTS_LOGS}/chkaccess.email
 
-  cat ${SCRIPTS_VAR}/chkaccess.email | mailx -s "Service Account unixsvc Access Report" "${WHOCARES}"
+  cat ${SCRIPTS_LOGS}/chkaccess.email | mailx -s "Service Account unixsvc Access Report" "${WHOCARES}"
 fi
 
