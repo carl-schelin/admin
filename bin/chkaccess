@@ -30,7 +30,7 @@ then
 fi
 
 # check the FQDN entry since that's what's used for pulling and pushing information to the servers
-for i in $(grep -v "^#" ${SCRIPTS_ETC}/servers | awk -F: '{print $1"."$2}')`
+for i in $(grep -v "^#" ${SCRIPTS_ETC}/servers | awk -F: '{print $1"."$2}')
 do
   grep -i $i ~/.ssh/known_hosts > /dev/null
   if [[ $? -ne 0 ]]
