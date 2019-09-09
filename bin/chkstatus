@@ -521,12 +521,16 @@ TimeText[10]="Reachability is good but Status is not: "
 TimeRegx[10]="GPS Server.*Reachability is good, but Status"
 TimeText[11]="Unable to determine Reachability: "
 TimeRegx[11]="Unable to determine Reachability"
+TimeText[12]="The chronyd service is not enabled: "
+TimeRegx[12]="chronyd is not enabled"
+TimeText[13]="The ntpd service is not enabled: : "
+TimeRegx[13]="ntpd is not enabled"
 
 # warnings
-TimeText[12]="ntp Drift File doesn't exist: "
-TimeRegx[12]="ntp drift file.*does not exist."
+TimeText[14]="ntp Drift File doesn't exist: "
+TimeRegx[14]="ntp drift file.*does not exist."
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
 do
   DEBUGFILTER="${DEBUGFILTER}|${TimeRegx[$i]}"
 done
@@ -645,15 +649,15 @@ ConfigRegx[44]="Stale.*drives found"
 ConfigText[45]="Possible drive swap occurred: "
 ConfigRegx[45]="Data found on spare drive"
 ConfigText[46]="Static route file incorrectly set: "
-ConfigRegx[46]="line 'dev' is incorrect: via."
+ConfigRegx[46]="line 'dev' is incorrect:"
 ConfigText[47]="The intrado script is disabled: "
 ConfigRegx[47]="The intrado script is disabled in root's cron"
 ConfigText[48]="RRDTool issue: "
 ConfigRegx[48]="Multiple copies of.*are running."
+ConfigText[49]="Static route file incorrectly set: "
+ConfigRegx[49]="line 'via' is incorrect:"
 
 # warnings
-ConfigText[49]="Missing IP or Hostname in /etc/hosts: "
-ConfigRegx[49]="not in /etc/hosts"
 ConfigText[50]="Misconfigured Swap: "
 ConfigRegx[50]="Gig which is less than Memory which is "
 ConfigText[51]="Misconfigured Swap: "
@@ -674,8 +678,10 @@ ConfigText[58]="Unnecessary static route: "
 ConfigRegx[58]="default gateway so the route probably isn't needed"
 ConfigText[59]="Intrado script hasn't run: "
 ConfigRegx[59]="The /opt/intrado/bin/intrado script hasn't run yet."
+ConfigText[60]="Missing IP or Hostname in /etc/hosts: "
+ConfigRegx[60]="not in /etc/hosts"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60
 do
   DEBUGFILTER="${DEBUGFILTER}|${ConfigRegx[$i]}"
 done
@@ -683,25 +689,20 @@ done
 
 KubeText[0]="Container failure: "
 KubeRegx[0]="Container.*has failed"
-KubeText[1]="Namespace gisdirector is reporting errors: "
-KubeRegx[1]="Namespace gisdirector is reporting errors:"
-KubeText[2]="Namespace kube-system is reporting errors: "
-KubeRegx[2]="Namespace kube-system is reporting errors:"
-KubeText[3]="Namespace nead-neam-mon is reporting errors: "
-KubeRegx[3]="Namespace nead-neam-mon is reporting errors:"
-KubeText[4]="Namespace nead-nq-service is reporting errors: "
-KubeRegx[4]="Namespace nead-nq-service is reporting errors:"
-KubeText[5]="Node is not Ready: "
-KubeRegx[5]="Node.*is currently not in Ready state"
-KubeText[6]="etcd back end is not healthy: "
-KubeRegx[6]="etcd cluster is not healthy"
-KubeText[7]="Unable to query the API Server: "
-KubeRegx[7]="apiserver VIP query failed"
+KubeText[1]="A namespace is reporting errors: "
+KubeRegx[1]="Namespace.*is reporting errors:"
+KubeText[2]="Node is not Ready: "
+KubeRegx[2]="Node.*is currently not in Ready state"
+KubeText[3]="etcd back end is not healthy: "
+KubeRegx[3]="etcd cluster is not healthy"
+KubeText[4]="Unable to query the API Server: "
+KubeRegx[4]="apiserver VIP query failed"
 
-KubeText[8]="Unable to use curl to access the local api server: "
-KubeRegx[8]="Local apiserver query failed"
+# warnings
+KubeText[5]="Unable to use curl to access the local api server: "
+KubeRegx[5]="Local apiserver query failed"
 
-for i in 0 1 2 3 4 5 6 7 8
+for i in 0 1 2 3 4 5
 do
   DEBUGFILTER="${DEBUGFILTER}|${KubeRegx[$i]}"
 done
@@ -907,7 +908,7 @@ then
 
   echo ""
   echo "Time Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13
   do
     CountValue=`grep -c "${TimeRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -929,7 +930,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -940,7 +941,7 @@ then
 
   echo ""
   echo "Kubernetes/Container Issues:"
-  for j in 0 1 2 3 4 5 6 7
+  for j in 0 1 2 3 4 
   do
     CountValue=`grep -c "${KubeRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -1050,7 +1051,7 @@ then
 
   echo ""
   echo "Time Issues:"
-  for j in 12
+  for j in 14
   do
     CountValue=`grep -c "${TimeRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -1072,7 +1073,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 49 50 51 52 53 54 55 56 57 58 59
+  for j in 50 51 52 53 54 55 56 57 58 59 60
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -1083,7 +1084,7 @@ then
 
   echo ""
   echo "Kubernetes/Container Issues:"
-  for j in 8
+  for j in 5
   do
     CountValue=`grep -c "${KubeRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
