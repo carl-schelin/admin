@@ -16,7 +16,6 @@ fi
 . "${DIRNAME}"/../.config
 
 PROGNAME="chkaccess"
-WHOCARES="cschelin@west.com"
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
