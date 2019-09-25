@@ -84,9 +84,11 @@ do
     fi
   else
     if [[ ! -f ${ADMIN}/servers/"${SERVER}"/passwd ]]
+    then
       echo "Unable to locate ${ADMIN}/servers/${SERVER}/passwd"
     fi
     if [[ ! -f ${ADMIN}/servers/"${SERVER}"/group ]]
+    then
       echo "Unable to locate ${ADMIN}/servers/${SERVER}/group"
     fi
   fi
