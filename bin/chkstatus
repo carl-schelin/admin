@@ -320,17 +320,45 @@ OpenViewText[38]="bbcutil is unable to ping Miami OpsBridge VIP: "
 OpenViewRegx[38]="bbcutil is unable to ping omiagenttraffic.*10.32.6.9"
 OpenViewText[39]="Unable to ping OpsBridge IP: "
 OpenViewRegx[39]="lnmt1dwasobprb3.*not pingable"
+OpenViewText[40]="Nagios monitoring site not pingable: "
+OpenViewRegx[40]="Monitoring site status.intrado.com.*is not pingable"
+OpenViewText[41]="Nagios monitoring site port not accessible: "
+OpenViewRegx[41]="Monitoring site status.intrado.com.*is not accessible"
+OpenViewText[42]="Longmont monitoring site not pingable: "
+OpenViewRegx[42]="Monitoring site lnmt1euomh8nm1.scc911.com.*is not pingable"
+OpenViewText[43]="Longmont monitoring site port not accessible: "
+OpenViewRegx[43]="Monitoring site lnmt1euomh8nm1.scc911.com.*is not accessible"
+OpenViewText[44]="Longmont monitoring site not pingable: "
+OpenViewRegx[44]="Monitoring site lnmt1euomh8nm2.scc911.com.*is not pingable"
+OpenViewText[45]="Longmont monitoring site port not accessible: "
+OpenViewRegx[45]="Monitoring site lnmt1euomh8nm2.scc911.com.*is not accessible"
+OpenViewText[46]="Miami monitoring site not pingable: "
+OpenViewRegx[46]="Monitoring site miam1euomh8nm1.scc911.com.*is not pingable"
+OpenViewText[47]="Miami monitoring site port not accessible: "
+OpenViewRegx[47]="Monitoring site miam1euomh8nm1.scc911.com.*is not accessible"
+OpenViewText[48]="Miami monitoring site not pingable: "
+OpenViewRegx[48]="Monitoring site miam1euomh8nm2.scc911.com.*is not pingable"
+OpenViewText[49]="Miami monitoring site port not accessible: "
+OpenViewRegx[49]="Monitoring site miam1euomh8nm2.scc911.com.*is not accessible"
+OpenViewText[50]="bbcutil is unable to ping Longmont nnmi server: "
+OpenViewRegx[50]="bbcutil is unable to ping lnmt1euomh8nm1.*10.32.10.60"
+OpenViewText[51]="bbcutil is unable to ping Longmont nnmi server: "
+OpenViewRegx[51]="bbcutil is unable to ping lnmt1euomh8nm2.*10.32.10.61"
+OpenViewText[52]="bbcutil is unable to ping Miami nnmi server: "
+OpenViewRegx[52]="bbcutil is unable to ping miam1euomh8nm1.*10.32.138.60"
+OpenViewText[53]="bbcutil is unable to ping Miami nnmi server: "
+OpenViewRegx[53]="bbcutil is unable to ping miam1euomh8nm2.*10.32.138.61"
 
 
 # warnings
-OpenViewText[40]="Management Route is not set: "
-OpenViewRegx[40]="Route to.*missing."
-OpenViewText[41]="The Openview agent is configured to not start: "
-OpenViewRegx[41]="The Openview agent is configured to not start"
-OpenViewText[42]="Test message sent today:"
-OpenViewRegx[42]="Sent a Minor test message to the Unix"
+OpenViewText[54]="Management Route is not set: "
+OpenViewRegx[54]="Route to.*missing."
+OpenViewText[55]="The Openview agent is configured to not start: "
+OpenViewRegx[55]="The Openview agent is configured to not start"
+OpenViewText[56]="Test message sent today:"
+OpenViewRegx[56]="Sent a Minor test message to the Unix"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56
 do
   DEBUGFILTER="${DEBUGFILTER}|${OpenViewRegx[$i]}"
 done
@@ -656,12 +684,12 @@ ConfigText[48]="RRDTool issue: "
 ConfigRegx[48]="Multiple copies of.*are running."
 ConfigText[49]="Static route file incorrectly set: "
 ConfigRegx[49]="line 'via' is incorrect:"
+ConfigText[50]="The sudoers file is generating errors: "
+ConfigRegx[50]="sudoers file has errors"
+ConfigText[51]="An expected versionlock doesn't exist: "
+ConfigRegx[51]="Unable to locate.*in /etc/yum/pluginconf.d/versionlock.list"
 
 # warnings
-ConfigText[50]="Misconfigured Swap: "
-ConfigRegx[50]="Gig which is less than Memory which is "
-ConfigText[51]="Misconfigured Swap: "
-ConfigRegx[51]="Memory is.*but Swap is.*Gig."
 ConfigText[52]="cfg2html is not installed yet: "
 ConfigRegx[52]="cfg2html not installed"
 ConfigText[53]="Number of spares is not 4: "
@@ -680,8 +708,12 @@ ConfigText[59]="Intrado script hasn't run: "
 ConfigRegx[59]="The /opt/intrado/bin/intrado script hasn't run yet."
 ConfigText[60]="Missing IP or Hostname in /etc/hosts: "
 ConfigRegx[60]="not in /etc/hosts"
+ConfigRegx[61]="The /opt/intrado/bin/intrado script hasn't run yet."
+ConfigText[61]="Missing IP or Hostname in /etc/hosts: "
+ConfigText[62]="Misconfigured Swap: "
+ConfigRegx[62]="Memory is.*but Swap is.*Gig."
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62
 do
   DEBUGFILTER="${DEBUGFILTER}|${ConfigRegx[$i]}"
 done
@@ -826,7 +858,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -930,7 +962,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -980,7 +1012,7 @@ then
 
   echo ""
   echo "OpenView Agent Issues:"
-  for j in 40 41 42
+  for j in 53 54 55
   do
     CountValue=`grep -c "${OpenViewRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -1073,7 +1105,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 50 51 52 53 54 55 56 57 58 59 60
+  for j in 52 53 54 55 56 57 58 59 60 61 62
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
