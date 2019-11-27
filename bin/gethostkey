@@ -61,7 +61,7 @@ do
     chmod 775 $SVRPATH
   fi
 
-  TIMEOUT=180
+  TIMEOUT=6
 
 # Content here: ssh to the server using the hostkey command
 
