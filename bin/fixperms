@@ -1,0 +1,7 @@
+#!/bin/ksh
+
+# ensure the unixsvc account can create and write to files in subdirectories
+
+chown -R unixsvc:sysadmin /usr/local/admin
+chmod -R g+w /usr/local/admin
+
