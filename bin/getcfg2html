@@ -737,12 +737,12 @@ do
     then
       if [[ $OS = "Linux" ]]
       then
-        CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+        CREATED=`egrep "Created (2017|2018|2019|2020|2021|2022|2023|2024)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
         DATE=`echo $CREATED | cut -f2 -d\ `
       fi
       if [[ $OS = "SunOS" ]]
       then
-        CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+        CREATED=`egrep "Created (2017|2018|2019|2020|2021|2022|2023|2024)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
         DATE=`echo $CREATED | cut -f2 -d\ `
       fi
       if [[ $OS = "FreeBSD" ]]
@@ -799,7 +799,7 @@ do
       fi
       if [[ $OS = "HP-UX" ]]
       then
-        CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+        CREATED=`egrep "Created (2017|2018|2019|2020|2021|2022|2023)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
         DATE=`echo $CREATED | head -1 | awk '{print $2}'`
       fi
     fi
