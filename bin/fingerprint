@@ -2,19 +2,31 @@
 
 # Carl Schelin
 # creates an identification file for each server
+# modified to look for a passed servers file so other groups can participate.
 
 ADMIN=/usr/local/admin
 OUTPUT=$ADMIN/logs/fingerprint
+SERVERS="servers"
+
+if [[ ! -z "$1" ]]
+then
+  if [[ -f $ADMIN/etc/$1 ]]
+  then
+    SERVERS=$1
+  fi
+fi
 
 cd /usr/local/httpd/bin
 
-for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" $ADMIN/etc/$SERVERS | cut -f1 -d:`
 do
   
+# create the fingerprint file
   /usr/local/bin/php /usr/local/httpd/bin/fingerprint.php $i > $OUTPUT
 
   cat $OUTPUT
 
+# copy it to the target server
   scp $ADMIN/logs/fingerprint $i:/opt/intrado/etc/
 
 done
