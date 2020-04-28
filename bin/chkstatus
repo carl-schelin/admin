@@ -691,14 +691,14 @@ ConfigText[51]="An expected versionlock doesn't exist: "
 ConfigRegx[51]="Unable to locate.*in /etc/yum/pluginconf.d/versionlock.list"
 ConfigText[52]="BigFix Client isn't installed: "
 ConfigRegx[52]="Bigfix Client is not installed in /opt/BESClient"
+ConfigText[53]="Tanium Client isn't installed: "
+ConfigRegx[53]="Tanium Client is not installed in /opt/Tanium"
+ConfigText[54]="Cisco Amp isn't installed: "
+ConfigRegx[54]="Cisco Amp is not installed"
+ConfigText[55]="LogRhythm isn't installed: "
+ConfigRegx[55]="LogRhythm is not installed"
 
 # warnings
-ConfigText[53]="Number of spares is not 4: "
-ConfigRegx[53]="Incorrect number of spares found"
-ConfigText[54]="rrdtool is not installed yet: "
-ConfigRegx[54]="rrdtool is not configured or.*is not running"
-ConfigText[55]="/etc/sudoers doesn't have the hostname alias: "
-ConfigRegx[55]="/etc/sudoers doesn't contain"
 ConfigText[56]="SELinux Active and Permissive: "
 ConfigRegx[56]="selinux is in Permissive mode"
 ConfigText[57]="Disk Space is major: "
@@ -717,8 +717,14 @@ ConfigText[63]="Misconfigured Swap: "
 ConfigRegx[63]="Swap is .* which is less than Memory which is.*Gig."
 ConfigText[64]="cfg2html is not installed yet: "
 ConfigRegx[64]="cfg2html not installed"
+ConfigText[65]="Number of spares is not 4: "
+ConfigRegx[65]="Incorrect number of spares found"
+ConfigText[66]="rrdtool is not installed yet: "
+ConfigRegx[66]="rrdtool is not configured or.*is not running"
+ConfigText[67]="/etc/sudoers doesn't have the hostname alias: "
+ConfigRegx[67]="/etc/sudoers doesn't contain"
 
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63 64 65 66 67
 do
   DEBUGFILTER="${DEBUGFILTER}|${ConfigRegx[$i]}"
 done
@@ -967,7 +973,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
@@ -1110,7 +1116,7 @@ then
 
   echo ""
   echo "Configuration Issues:"
-  for j in 53 54 55 56 57 58 59 60 61 62 63 64
+  for j in 56 57 58 59 60 61 62 63 64 65 66 67
   do
     CountValue=`grep -c "${ConfigRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
