@@ -20,19 +20,21 @@ cd /usr/local/httpd/bin
 
 for i in `grep -v "^#" $ADMIN/etc/$SERVERS | cut -f1 -d:`
 do
+  SVRPATH=$ADMIN/servers/$i
+
 # make the directory if it doesn't exist
-  if [[ ! -d $ADMIN/servers/$i ]]
+  if [[ ! -d $SVRPATH ]]
   then
-    mkdir $ADMIN/servers/$i
+    mkdir $SVRPATH
   fi
   
 # create the fingerprint file
-  /usr/local/bin/php /usr/local/httpd/bin/fingerprint.php $i > $ADMIN/servers/$i/fingerprint
+  /usr/local/bin/php /usr/local/httpd/bin/fingerprint.php $i > $SVRPATH/fingerprint
 
-  cat $OUTPUT
+  cat $SVRPATH/fingerprint
 
 # copy it to the target server
-  scp $ADMIN/servers/$i/fingerprint $i:/opt/intrado/etc/
+  scp $SVRPATH/fingerprint $i:/opt/intrado/etc/
 
 done
 
