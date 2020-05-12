@@ -143,9 +143,13 @@ UserText[15]="root account expires: "
 UserRegx[15]="Account expires.*root"
 UserText[16]="root password expires: "
 UserRegx[16]="Password expires.*root"
+UserText[17]="eitsnowp password expires: "
+UserRegx[17]="Password expires.*eitsnowp"
+UserText[18]="ucmdbsvc password expires: "
+UserRegx[18]="Password expires.*ucmdbsvc"
 
 Pipe=""
-for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
 do
   DEBUGFILTER="${DEBUGFILTER}${Pipe}${UserRegx[$i]}"
   Pipe="|"
@@ -856,7 +860,7 @@ if [[ $DEBUG = 'no' ]] && [[ $GREP = '31m' ]] || [[ $GREP = '(31m|33m)' ]]
 then
   echo ""
   echo "User Issues:"
-  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16
+  for j in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18
   do
     CountValue=`grep -c "${UserRegx[$j]}" $ADMIN/logs/chkstatus.log`
     if [[ $CountValue -gt 0 ]]
