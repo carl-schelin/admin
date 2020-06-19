@@ -91,11 +91,11 @@ do
   fi
 
 # copy the server file into the temporary directory
-  if [[ -f $SVRPATH/etc.tar ]]
+  if [[ -f $SVRPATH/etc.tar.gz ]]
   then
-    cp $SVRPATH/etc.tar $TMPPATH/
+    cp $SVRPATH/etc.tar.gz $TMPPATH/
     cd $TMPPATH
-    tar fx etc.tar
+    gzip -dc etc.tar.gz | tar fx
   fi
 
   echo "Processing: $SERVER"
