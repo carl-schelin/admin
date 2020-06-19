@@ -33,7 +33,7 @@ do
 
 # Content here: scp the config file from here
 
-  CONTENT="etc.tar"
+  CONTENT="etc.tar.gz"
 
   if [ -f $SVRPATH/$CONTENT ]
   then
