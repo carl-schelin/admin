@@ -1043,6 +1043,32 @@ done
   fi
 
 
+#++++++++++++++++++++++++++++++++++++++++++
+#++ Process the output of getyum
+#getyum
+#runscript getyum
+#++++++++++++++++++++++++++++++++++++++++++
+
+# checking the output of yum history 
+  CONTENT='yum.history*'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+# and capturing yum.error if it exists
+  CONTENT='yum.error'
+
+  if [ -f $TMPPATH/$CONTENT ]
+  then
+    cp $TMPPATH/$CONTENT $SVRPATH/
+    chmod 664 $SVRPATH/$CONTENT
+  fi
+
+
+
 exit 0
 
 #runscript mkgoodsudo
