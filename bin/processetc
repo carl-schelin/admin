@@ -608,12 +608,17 @@ do
 #++++++++++++++++++++++++++++++++++++++++++
 
 # getting the various versions files
-  CONTENT='chkpackages.output'
+  CONTENT='chkpackages.review'
 
   if [ -f $TMPPATH/$CONTENT ]
   then
     cp $TMPPATH/$CONTENT $SVRPATH/
     chmod 664 $SVRPATH/$CONTENT
+  fi
+# removing as chkserver creates the file as chkpackages.review now.
+  if [[ -f $TMPPATH/chkpackages.output ]]
+  then
+    rm $TMPPATH/chkpackages.output
   fi
 
 
