@@ -296,6 +296,7 @@ done
 
 ERROR=`/usr/bin/grep "^ERROR:" $LOG`
 WARNING=`/usr/bin/grep "^WARNING:" $LOG | grep -v "'uptime.output' was not created."`
+UPTIME=`/usr/bin/grep "^WARNING:" $LOG | grep "'uptime.output' was not created."`
 
 if [[ -z $ERROR ]]
 then
@@ -325,6 +326,11 @@ else
     then
       echo "\n\nThe following servers were rebooted during the past 24 hours" | /usr/bin/tee -a $MAIL
       /usr/bin/grep "^WARNING:" $LOG | grep -v "'uptime.output' was not created."  | /usr/bin/tee -a $MAIL
+    fi
+    if [[ ! -z $UPTIME ]]
+    then
+      echo "\n\nThe unixsvc account was unable to run the uptime command via ssh on the following servers." | /usr/bin/tee -a $MAIL
+      /usr/bin/grep "^WARNING:" $LOG | grep "'uptime.output' was not created."  | /usr/bin/tee -a $MAIL
     fi
     cat $MAIL | /usr/bin/mailx -s "ERROR: Server Check Reports Failures" $WHOCARES
   fi
