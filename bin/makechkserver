@@ -1,0 +1,23 @@
+#!/bin/ksh
+
+cd /usr/local/admin/logs/chkserver
+
+echo "# The chkserver.input file is generated." > chkserver.message
+echo "# Update the 'chkserver.merge' file which is then added to the chkserver.input file" >> chkserver.message
+echo "#" >> chkserver.message
+
+/usr/local/bin/php /usr/local/httpd/bin/login.report.php > chkserver
+
+# get the merge file from the source
+
+scp lnmt1cuomrcs1:/opt/static/intrado/etc/chkserver.merge .
+
+cat chkserver chkserver.merge | sort | uniq > chkserver.output
+
+cat chkserver.message chkserver.output > chkserver.input
+
+# update the chksudo.dat file
+
+cd /usr/local/admin/etc
+./chksudo.clean
+
