@@ -74,6 +74,7 @@ then
 
        /usr/local/bin/kubectl config use-context ${CONTEXT}-miam1-1-context >> ${LOGS}
        /usr/local/bin/kubectl drain miam1euomknode01.scc911.com --delete-local-data --ignore-daemonsets >> ${LOGS}
+       /usr/local/bin/kubectl drain miam1euomknode06.scc911.com --delete-local-data --ignore-daemonsets >> ${LOGS}
        ;;
 
 
@@ -110,6 +111,7 @@ then
 
        /usr/local/bin/kubectl config use-context ${CONTEXT}-miam1-1-context >> ${LOGS}
        /usr/local/bin/kubectl drain miam1euomknode02.scc911.com --delete-local-data --ignore-daemonsets >> ${LOGS}
+       /usr/local/bin/kubectl drain miam1euomknode07.scc911.com --delete-local-data --ignore-daemonsets >> ${LOGS}
        ;;
 
 
@@ -259,6 +261,7 @@ then
 
        /usr/local/bin/kubectl config use-context ${CONTEXT}-miam1-1-context >> ${LOGS}
        /usr/local/bin/kubectl uncordon miam1euomknode01.scc911.com >> ${LOGS}
+       /usr/local/bin/kubectl uncordon miam1euomknode06.scc911.com >> ${LOGS}
        ;;
 
 
@@ -295,6 +298,7 @@ then
 
        /usr/local/bin/kubectl config use-context ${CONTEXT}-miam1-1-context >> ${LOGS}
        /usr/local/bin/kubectl uncordon miam1euomknode02.scc911.com >> ${LOGS}
+       /usr/local/bin/kubectl uncordon miam1euomknode07.scc911.com >> ${LOGS}
        ;;
 
 
