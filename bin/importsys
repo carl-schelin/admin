@@ -52,8 +52,8 @@ done
 #OUTPUT=`egrep "(Sorry: Unable to locate|Skipping|ERROR)" $LOG`
 #egrep "(Sorry: Unable to locate|Skipping|ERROR)" $LOG | sort > $ERRORS
 
-OUTPUT=`egrep -v "(uuid|system|filesystem|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found "`
-egrep -v "(uuid|system|filesystem|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found " | sort > $ERRORS
+OUTPUT=`egrep -v "(uuid|system|filesystem|hostname|fqdn|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found "`
+egrep -v "(uuid|system|filesystem|hostname|fqdn|interface|routing|hardware|software|timezone|configuration|last patch date) found" $LOG | grep -v "interface names... Found" | egrep -v "clearing (cpu|hard disk) validate" | grep -v "Server name is blank" | grep -v "^Found " | sort > $ERRORS
 
 if [[ ! -z ${OUTPUT} ]]
 then
