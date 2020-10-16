@@ -15,7 +15,7 @@ fi
 . "${DIRNAME}"/../.config
 
 WHOCARES="web.applications.team@west.com"
-LOG="${SCRIPTS}/output/status.webapp"
+LOG="${SCRIPTS}/output/status.web"
 touch ${LOG}
 
 if [ -f ${LOG} ]
@@ -28,20 +28,20 @@ do
   SERVER=`echo ${i} | cut -f1 -d:`
   SVRPATH="${SCRIPTS}/servers/${SERVER}"
 
-  if [ -f "${SVRPATH}/config.webapp.status" ]
+  if [ -f "${SVRPATH}/config.web.status" ]
   then
     echo ${SERVER}
     echo "============" 
-    grep "ERROR" ${SVRPATH}/config.webapp.status 
-    grep "WARNING" ${SVRPATH}/config.webapp.status 
+    grep "ERROR" ${SVRPATH}/config.web.status 
+    grep "WARNING" ${SVRPATH}/config.web.status 
     echo "" 
 
     echo ${SERVER} >> ${LOG}
     echo "============" >> ${LOG}
-    grep "ERROR" ${SVRPATH}/config.webapp.status >> ${LOG}
-    grep "WARNING" ${SVRPATH}/config.webapp.status >> ${LOG}
+    grep "ERROR" ${SVRPATH}/config.web.status >> ${LOG}
+    grep "WARNING" ${SVRPATH}/config.web.status >> ${LOG}
     echo "" >> ${LOG}
-    rm ${SVRPATH}/config.webapp.status
+    rm ${SVRPATH}/config.web.status
   fi
 
 done
