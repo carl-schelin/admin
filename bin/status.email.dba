@@ -14,7 +14,7 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-WHOCARES="DBAGroup@intrado.com,incidents@datavail.com"
+WHOCARES="DBAGroup@intrado.com"
 LOG="${SCRIPTS}/output/status.dba"
 SEND="0"
 TODAY=`date +"%w"`
