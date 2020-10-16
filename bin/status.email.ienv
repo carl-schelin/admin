@@ -14,7 +14,7 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-WHOCARES="IENVoiceSysAdmins.safetyservices@regmail.west.com"
+WHOCARES="ien.voice.apps.sys.admins@west.com"
 LOG="${SCRIPTS}/output/status.ienv"
 SEND="0"
 TODAY=`date +"%w"`
@@ -31,6 +31,12 @@ do
 
   if [ -f $SVRPATH/config.ienv.status ]
   then
+    echo $SERVER 
+    echo "============" 
+    grep "ERROR" $SVRPATH/config.ienv.status 
+    grep "WARNING" $SVRPATH/config.ienv.status 
+    echo "" 
+
     echo $SERVER >> $LOG
     echo "============" >> $LOG
     grep "ERROR" $SVRPATH/config.ienv.status >> $LOG
