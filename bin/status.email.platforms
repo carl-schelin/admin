@@ -1,0 +1,65 @@
+#!/bin/ksh
+
+# this script checks the various systems for disk space issues on platforms engineering owned systems.
+
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+WHOCARES="unix.platform.build.team@west.com"
+LOG="${SCRIPTS}/output/status.platforms"
+SEND="0"
+TODAY=`date +"%w"`
+
+if [ -f $LOG ]
+then
+  rm $LOG
+fi
+
+for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
+do
+  SERVER=`echo $i|cut -f1 -d:`
+  SVRPATH="${SCRIPTS}/servers/$SERVER"
+
+  if [ -f $SVRPATH/config.platforms.status ]
+  then
+    echo $SERVER >> $LOG
+    echo "============" >> $LOG
+    grep "ERROR" $SVRPATH/config.platforms.status >> $LOG
+    grep "WARNING" $SVRPATH/config.platforms.status >> $LOG
+    echo "" >> $LOG
+    rm $SVRPATH/config.platforms.status
+  fi
+
+done
+
+if [[ ! -z "$WHOCARES" ]]
+then
+  OUTPUT=`grep "ERROR" $LOG`
+  if [ ! -z "$OUTPUT" ]
+  then
+    SUBJECT="$MAIL Status Report: Errors Found"
+  else
+    OUTPUT=`grep "WARNING" $LOG`
+    if [ ! -z "$OUTPUT" ]
+    then
+      SUBJECT="$MAIL Status Report: Warnings Found"
+    else
+      SUBJECT="$MAIL Status Report: All is well"
+    fi
+  fi
+
+  for i in $SEND
+  do
+    cat $LOG | mailx -s "$SUBJECT" $WHOCARES
+  done
+fi
+
