@@ -31,6 +31,12 @@ do
 
   if [ -f $SVRPATH/config.datavail.status ]
   then
+    echo $SERVER 
+    echo "============" 
+    grep "ERROR" $SVRPATH/config.datavail.status 
+    grep "WARNING" $SVRPATH/config.datavail.status
+    echo "" 
+
     echo $SERVER >> $LOG
     echo "============" >> $LOG
     grep "ERROR" $SVRPATH/config.datavail.status >> $LOG
