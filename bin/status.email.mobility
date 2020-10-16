@@ -14,7 +14,7 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-WHOCARES="MobilitySysAdmin.safetyservices@regmail.west.com"
+WHOCARES="mobility.sys.admin@west.com"
 LOG="${SCRIPTS}/output/status.mobility"
 SEND="0"
 TODAY=`date +"%w"`
@@ -31,6 +31,12 @@ do
 
   if [ -f $SVRPATH/config.mobility.status ]
   then
+    echo $SERVER 
+    echo "============" 
+    grep "ERROR" $SVRPATH/config.mobility.status 
+    grep "WARNING" $SVRPATH/config.mobility.status 
+    echo "" 
+
     echo $SERVER >> $LOG
     echo "============" >> $LOG
     grep "ERROR" $SVRPATH/config.mobility.status >> $LOG
