@@ -14,7 +14,7 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-WHOCARES="ALIMSysAdmins.safetyservices@regmail.west.com"
+WHOCARES="alim.sys.admins@west.com"
 LOG="${SCRIPTS}/output/status.alim"
 SEND="0"
 TODAY=`date +"%w"`
@@ -31,6 +31,12 @@ do
 
   if [ -f $SVRPATH/config.alim.status ]
   then
+    echo $SERVER
+    echo "============" 
+    grep "ERROR" $SVRPATH/config.alim.status
+    grep "WARNING" $SVRPATH/config.alim.status
+    echo "" 
+
     echo $SERVER >> $LOG
     echo "============" >> $LOG
     grep "ERROR" $SVRPATH/config.alim.status >> $LOG
