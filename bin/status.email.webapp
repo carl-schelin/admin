@@ -14,6 +14,7 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
+WHOCARES="web.applications.team@west.com"
 LOG="${SCRIPTS}/output/status.webapp"
 touch ${LOG}
 
@@ -29,12 +30,18 @@ do
 
   if [ -f "${SVRPATH}/config.webapp.status" ]
   then
+    echo ${SERVER}
+    echo "============" 
+    grep "ERROR" ${SVRPATH}/config.webapp.status 
+    grep "WARNING" ${SVRPATH}/config.webapp.status 
+    echo "" 
+
     echo ${SERVER} >> ${LOG}
     echo "============" >> ${LOG}
     grep "ERROR" ${SVRPATH}/config.webapp.status >> ${LOG}
     grep "WARNING" ${SVRPATH}/config.webapp.status >> ${LOG}
     echo "" >> ${LOG}
-#    rm ${SVRPATH}/config.webapp.status
+    rm ${SVRPATH}/config.webapp.status
   fi
 
 done
