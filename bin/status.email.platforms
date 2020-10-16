@@ -31,6 +31,12 @@ do
 
   if [ -f $SVRPATH/config.platforms.status ]
   then
+    echo $SERVER 
+    echo "============" 
+    grep "ERROR" $SVRPATH/config.platforms.status 
+    grep "WARNING" $SVRPATH/config.platforms.status
+    echo ""
+
     echo $SERVER >> $LOG
     echo "============" >> $LOG
     grep "ERROR" $SVRPATH/config.platforms.status >> $LOG
