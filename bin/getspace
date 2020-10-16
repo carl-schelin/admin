@@ -138,76 +138,76 @@ do
         then
           echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
           echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
-          CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
-          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+
+# we have a filesystems file in /usr/local/admin/etc/filesystems. It has servername:filesystem:group name
+          grep "${SERVER}:${FILESYSTEM}:Database Administration SFS"
+          if [[ $? -eq 0 ]]
           then
             echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
           fi
 
-          if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
+          grep "${SERVER}:${FILESYSTEM}:Datavail"
+          if [[ $? -eq 0 ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.datavail.status
+          fi
+
+          grep "${SERVER}:${FILESYSTEM}:System Administration Web Applications SFS"
+          if [[ $? -eq 0 ]]
           then
             echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
           fi
+
+# old way; in case it doesn't work in the morning
+#          CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
+#          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+#          then
+#            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+#          fi
+#
+#          if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
+#          then
+#            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
+#          fi
 		
         else
           if [[ $SPACE -ge $WARNING ]]
           then
             echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
             echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
-            CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
-            if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+
+# we have a filesystems file in /usr/local/admin/etc/filesystems. It has servername:filesystem:group name
+            grep "${SERVER}:${FILESYSTEM}:Database Administration SFS"
+            if [[ $? -eq 0 ]]
             then
               echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
             fi
 
-            if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
+            grep "${SERVER}:${FILESYSTEM}:Datavail"
+            if [[ $? -eq 0 ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.datavail.status
+            fi
+
+            grep "${SERVER}:${FILESYSTEM}:System Administration Web Applications SFS"
+            if [[ $? -eq 0 ]]
             then
               echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
             fi
-          fi
-        fi
-      done
-    fi
-    if [[ $OS = "OSF1" ]]
-    then
-      for j in `egrep "^(cluster_root|cluster_usr|cluster_var|data_domain|idb_domain|im_domain|ips_domain|ipslog_domain|mir1_domain|mir2_domain|misc_domain|raid2_domain|raid4_domain|root1_domain|root2_domain|root_domain|tmp_domain|u01_domain|u02_domain|u03_domain|u04_domain|u11_domain|u12_domain|u13_domain|u14_domain|u15_domain|u16_domain|u21_domain|u22_domain|u45_domain|u512_domain|u51_domain|u52_domain|usr_domain|var2_domain|var_domain)\#" $SVRPATH/diskspace.output | awk '{print $NF":"$5}'`
-      do
-        FILESYSTEM=`echo $j | cut -f1 -d:`
-        SPACE=`echo $j | cut -f2 -d: | cut -f1 -d%`
 
-        WARNING=85
-        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f3 -d:`
-        if [ ! "$SPCHK" = "" ]
-        then
-          WARNING=$SPCHK
-        fi
 
-        ERROR=95
-        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f4 -d:`
-        if [ ! "$SPCHK" = "" ]
-        then
-          ERROR=$SPCHK
-        fi
 
-        if [[ $SPACE -ge $ERROR ]]
-        then
-          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
-          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
-          CHKSPACE=`echo $FILESYSTEM | egrep "/(u|d)[0-9][0-9]"`
-          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
-          fi
-        else
-          if [[ $SPACE -ge $WARNING ]]
-          then
-            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
-            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
-            CHKSPACE=`echo $FILESYSTEM | egrep "/(u|d)[0-9][0-9]"`
-            if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
-            then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
-            fi
+# old way; in case it doesn't work in the morning
+#            CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
+#            if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
+#            then
+#              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+#            fi
+#
+#            if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
+#            then
+#              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
+#            fi
           fi
         fi
       done
