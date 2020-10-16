@@ -158,6 +158,37 @@ do
             echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
           fi
 
+# the IEN Voice team is different as there are two teams that merged into one.
+          grep "${SERVER}:${FILESYSTEM}:System Administration (IENV) and i3 SFS"
+          if [[ $? -eq 0 ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+          fi
+
+          grep "${SERVER}:${FILESYSTEM}:System Administration IENV and (i3) SFS"
+          if [[ $? -eq 0 ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+          fi
+
+          grep "${SERVER}:${FILESYSTEM}:System Administration ALIM SFS"
+          if [[ $? -eq 0 ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.alim.status
+          fi
+
+          grep "${SERVER}:${FILESYSTEM}:Systems Administration Mobility SFS"
+          if [[ $? -eq 0 ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.mobility.status
+          fi
+
+          grep "${SERVER}:${FILESYSTEM}:Cloud Services Engineering"
+          if [[ $? -eq 0 ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
+          fi
+
 # old way; in case it doesn't work in the morning
 #          CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
 #          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
@@ -195,6 +226,36 @@ do
               echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
             fi
 
+# the IEN Voice team is different as there are two teams that merged into one.
+            grep "${SERVER}:${FILESYSTEM}:System Administration (IENV) and i3 SFS"
+            if [[ $? -eq 0 ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+            fi
+
+            grep "${SERVER}:${FILESYSTEM}:System Administration IENV and (i3) SFS"
+            if [[ $? -eq 0 ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+            fi
+
+            grep "${SERVER}:${FILESYSTEM}:System Administration ALIM SFS"
+            if [[ $? -eq 0 ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.alim.status
+            fi
+
+            grep "${SERVER}:${FILESYSTEM}:Systems Administration Mobility SFS"
+            if [[ $? -eq 0 ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.mobility.status
+            fi
+
+            grep "${SERVER}:${FILESYSTEM}:Cloud Services Engineering"
+            if [[ $? -eq 0 ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
+            fi
 
 
 # old way; in case it doesn't work in the morning
