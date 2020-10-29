@@ -43,7 +43,7 @@ $NDAYS=int time / (3600 * 24);
 
 @users = `cat $HOME/servers/check.users`;
 #@users = `cat $HOME/check/checked.output.sorted`;
-@email = `cat $HOME/etc/intrado.email`;
+@email = `cat $HOME/etc/company.email`;
 @exclude = `cat $HOME/etc/users.exclude`;
 
 $server = "";

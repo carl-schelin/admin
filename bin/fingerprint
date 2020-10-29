@@ -34,7 +34,6 @@ do
   cat $SVRPATH/fingerprint
 
 # copy it to the target server
-  scp $SVRPATH/fingerprint $i:/opt/intrado/etc/
   scp $SVRPATH/fingerprint $i:/opt/unixsuite/etc/
 
 done
