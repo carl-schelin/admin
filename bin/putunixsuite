@@ -103,6 +103,27 @@ do
     fi
   done
 
+# special installation of the rrdtool scripts.
+# the main scripts; makegraphs, makerrd, makethumbs, and updaterrd are all built upon installation 
+# but the other files can be installed
+
+# only run if timeout is greater than 0; assumes the server is accessible.
+  if [[ $TIMEOUT -gt 0 ]]
+  then
+    if [[ $OS = 'Linux' ]]
+    then
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/install $TARGET:/opt/unixsuite/rrdtool/install/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
+    fi
+    if [[ $OS = 'SunOS' ]]
+    then
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/install $TARGET:/opt/unixsuite/rrdtool/install/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
+    fi
+  fi
+
 done
 
 # finally, recreate the kickstart install file
