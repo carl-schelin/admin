@@ -58,7 +58,7 @@ print "  <li>When we manage a new system, either via new deployment or taking re
 print "</ul>\n";
 print "\n";
 print "<ul>\n";
-print "  <li><span class=\"ui-state-error\">Highlight</span> - GECOS is wrong or missing, not in intrado.email listing (implies user account is not locked).</li>\n";
+print "  <li><span class=\"ui-state-error\">Highlight</span> - GECOS is wrong or missing, not in company.email listing (implies user account is not locked).</li>\n";
 print "  <li><span class=\"ui-state-highlight\">Highlight</span> - Service account located in users.exclude listing.</li>\n";
 print "</ul>\n";
 print "\n";
@@ -79,7 +79,7 @@ $comparedate = sprintf("%4d%02d%02d", ($year + 1900), ($mon + 1), $mday);
 # updated to ensure a YYYYMMDD output padded with zeros
 
 @users = `cat $HOME/servers/check.sudoers`;
-@email = `cat $HOME/etc/intrado.email`;
+@email = `cat $HOME/etc/company.email`;
 @exclude = `cat $HOME/etc/sudoers.exclude`;
 @chksudo = `cat $HOME/etc/chksudo.dat`;
 
@@ -104,7 +104,7 @@ for ($i = 0; $i <= $#users; $i++) {
     print "</tr>\n";
   }
 
-# check e-mail address from GECOS field and flag it if it's not in the intrado.email file
+# check e-mail address from GECOS field and flag it if it's not in the company.email file
 #
 # Move the setting of @mail outside the loop and only loop through email if $mail[1] is not
 # blank, equal to centrify or does not contain an @ symbol
