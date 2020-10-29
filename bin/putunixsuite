@@ -114,12 +114,14 @@ do
     then
       /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/install $TARGET:/opt/unixsuite/rrdtool/install/ &
       /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/runstats $TARGET:/opt/unixsuite/rrdtool/ &
       /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
     fi
     if [[ $OS = 'SunOS' ]]
     then
       /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/install $TARGET:/opt/unixsuite/rrdtool/install/ &
       /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
+      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/runstats $TARGET:/opt/unixsuite/rrdtool/ &
       /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
     fi
   fi
