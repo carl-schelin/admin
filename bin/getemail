@@ -15,7 +15,7 @@ cd $SAVED
 # the file name is CORP_List.txt
 # for the server name(s), bring up the properties of the O: drive and you'll see a list of the servers
 
-/bin/cat $SAVED/CORP_List.txt | /usr/bin/tr [A-Z] [a-z] | /usr/bin/sort | /usr/bin/uniq | /bin/sed -e "s/$//g" > $SAVED/intrado.email
+/bin/cat $SAVED/CORP_List.txt | /usr/bin/tr [A-Z] [a-z] | /usr/bin/sort | /usr/bin/uniq | /bin/sed -e "s/$//g" > $SAVED/company.email
 
-/usr/bin/scp $SAVED/intrado.email incojs01:/usr/local/admin/etc
+/usr/bin/scp $SAVED/company.email lnmt1cuomtool11:/usr/local/admin/etc
 
