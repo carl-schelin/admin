@@ -15,7 +15,7 @@ fi
 . "${DIRNAME}"/../.config
 
 WHOCARES="web.applications.team@west.com"
-LOG="${SCRIPTS}/output/status.web"
+LOG="${ADMIN}/output/status.web"
 touch ${LOG}
 
 if [ -f ${LOG} ]
@@ -23,10 +23,10 @@ then
   rm ${LOG}
 fi
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo ${i} | cut -f1 -d:`
-  SVRPATH="${SCRIPTS}/servers/${SERVER}"
+  SVRPATH="${ADMIN}/servers/${SERVER}"
 
   if [ -f "${SVRPATH}/config.web.status" ]
   then
