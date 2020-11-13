@@ -213,7 +213,7 @@ do
 # check the status of the messages file.
   if [ ! -z "$DEBUG" ]; then echo "Checking messages"; fi
 
-  MSGDATE=`cat ${SCRIPTS}/servers/messages.date`
+  MSGDATE=`cat ${ADMIN}/servers/messages.date`
 
   if [[ -f $SVRPATH/messages.$MSGDATE ]]
   then
