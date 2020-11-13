@@ -116,7 +116,7 @@ do
 # this section pulls the HOSTNAME from the translation file if it exists. If not, it sets it 
 # to the inventory name so we know which file to copy and which one to parse.
 
-  HOSTNAME=$(grep "^${SERVER}:" ${SCRIPTS_DATA}/cfg2html.translations)
+  HOSTNAME=$(grep "^${SERVER}:" ${ADMIN_DATA}/cfg2html.translations)
 
 # if it's not in the file, it's assumed to be a single interface system and SERVER == HOSTNAME.
   if [[ -z ${HOSTNAME} ]]
