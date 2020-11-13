@@ -18,24 +18,20 @@ fi
 
 # possible errors so far discovered:
 ERRORS="(Container.*has failed"
-ERRORS="${ERRORS}|Namespace gisdirector is reporting errors"
-ERRORS="${ERRORS}|Namespace kube-system is reporting errors"
-ERRORS="${ERRORS}|Namespace nead-neam-mon is reporting errors"
-ERRORS="${ERRORS}|Namespace nead-nq-service is reporting errors"
 ERRORS="${ERRORS}|Node.*is currently not in Ready state"
 ERRORS="${ERRORS})"
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers | egrep "(kube|knode)" | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | egrep "(kube|knode)" | cut -f1 -d:`
 do
-  egrep "${ERRORS}" ${SCRIPTS}/servers/${i}/chkserver.output > /dev/null
+  egrep "${ERRORS}" ${ADMIN}/servers/${i}/chkserver.output > /dev/null
   if [[ $? = 0 ]]
   then
-    EMAIL="${EMAIL}${i}`egrep "${ERRORS}" ${SCRIPTS}/servers/${i}/chkserver.output`\n"
+    EMAIL="${EMAIL}${i}`egrep "${ERRORS}" ${ADMIN}/servers/${i}/chkserver.output`\n"
   fi
 done
 
 if [[ ! -z ${EMAIL} ]]
 then
-  echo "The following errors were reported on the listed Kubernetes server.\n\n${EMAIL}\n\nReview the Kubernetes wiki page for actions:\nhttps://incowk02.scc911.com/wiki/index.php/Troubleshooting_Kubernetes" | mailx -s "Kubernetes Issues" ${WHOCARES}
+  echo "The following errors were reported on the listed Kubernetes server.\n\n${EMAIL}\n\nReview the Kubernetes wiki page for actions:\n${WIKISITE}/Troubleshooting_Kubernetes" | mailx -s "Kubernetes Issues" ${WHOCARES}
 fi
 
