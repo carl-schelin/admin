@@ -26,7 +26,7 @@ MON=`date +"%m"`
 MONTH=`date +"%B"`
 DAY=`date +"%d"`
 YEAR=`date +"%Y"`
-LOG="${SCRIPTS}/output/status.tandem"
+LOG="${ADMIN}/output/status.tandem"
 HTML="/var/apache2/htsecure/status/status.tandem.${YEAR}${MON}${DAY}.html"
 # activate to see additional messages on the command line. If debug is active, e-mail will not be sent
 #DEBUG="Yes"
@@ -61,11 +61,11 @@ echo "on the perceived severity. Resolving the problem consists of going in to t
 echo "file over the same named <b>.good</b> file." >> $HTML
 echo "" >> $HTML
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers.tandem | grep HP-UX`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers.tandem | grep HP-UX`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -z "$DEBUG" ]; then echo "Server: $SERVER"; fi
 
