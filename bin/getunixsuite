@@ -187,7 +187,7 @@ runscript getif
 
 # being reviewed for inclusion to the process etc script
 
-runscript getscanraid
+#runscript getscanraid osf only
 runscript getsaraid
 runscript mkgoodsudo
 runscript getsudo
