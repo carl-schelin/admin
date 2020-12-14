@@ -15,8 +15,6 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-PROGNAME="processetc"
-
 if [[ ! $RUNBY -eq 5000 ]]
 then
   echo "This script must be run by the Unix Service account."
