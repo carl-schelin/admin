@@ -3,30 +3,47 @@
 # getetc - Retrieve all the files from the etc directory.
 # Owner: Carl Schelin
 
-PROGNAME="getetc"
-LOC=/usr/local/admin
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
 
-for i in `grep -v "^#" $LOC/etc/servers`
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! ${RUNBY} -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="getetc"
+
+for i in $(grep -v "^#" ${ADMIN_DATA}/servers)
 do
-  SERVER=`echo $i|cut -f1 -d:`
-  FQDN=`echo $i|cut -f2 -d:`
-  OS=`echo $i|cut -f3 -d:`
+  SERVER=$(echo ${i}|cut -f1 -d:)
+  FQDN=$(  echo ${i}|cut -f2 -d:)
+  OS=$(    echo ${i}|cut -f3 -d:)
 
 # add the dot for the scp command
-  if [[ ! -z $FQDN ]]
+  if [[ ! -z ${FQDN} ]]
   then
-    FQDN=".$FQDN"
+    FQDN=".${FQDN}"
   fi
 
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/${SERVER}"
 
-  if [ ! -d $SVRPATH ]
+  if [ ! -d ${SVRPATH} ]
   then
-    mkdir $SVRPATH
-    chmod 775 $SVRPATH
+    mkdir ${SVRPATH}
+    chmod 775 ${SVRPATH}
   fi
 
   TIMEOUT=80
@@ -35,12 +52,12 @@ do
 
   CONTENT="etc.tar.gz"
 
-  if [ -f $SVRPATH/$CONTENT ]
+  if [ -f ${SVRPATH}/${CONTENT} ]
   then
-    rm $SVRPATH/$CONTENT
+    rm ${SVRPATH}/${CONTENT}
   fi
 
-  /usr/bin/scp $SERVER$FQDN:/opt/intrado/$CONTENT $SVRPATH/ 2>&1 &
+  /usr/bin/scp ${SERVER}${FQDN}:${SCRIPTS}/${CONTENT} ${SVRPATH}/ 2>&1 &
   PID=$!
 
 # wait for the specified number of seconds for scp to complete
@@ -51,62 +68,25 @@ do
   /usr/bin/ps -p $PID > /dev/null 2>&1
   if [[ $? -eq 0 ]]
   then
-    while [[ $TIMEOUT -gt 0 ]]
+    while [[ ${TIMEOUT} -gt 0 ]]
     do
-      /usr/bin/ps -p $PID > /dev/null 2>&1
+      /usr/bin/ps -p ${PID} > /dev/null 2>&1
       if [[ $? -ne 0 ]]
       then
         break
       fi
-      TIMEOUT=$(($TIMEOUT - 1))
+      TIMEOUT=$((${TIMEOUT} - 1))
       sleep 1
     done
 
 # if the timeout reaches 0, then the process was killed. Report something.
-    if [[ $TIMEOUT -le 0 ]]
+    if [[ ${TIMEOUT} -le 0 ]]
     then
-      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
-      echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
-      chmod 664 $SVRPATH/config.status
-      chmod 664 $SVRPATH/morning.status
-      kill -KILL $PID
-    fi
-  fi
-
-# perhaps the files are in the unixsuite directory
-  if [[ ! -f $SVRPATH/$CONTENT ]]
-  then
-    /usr/bin/scp $SERVER$FQDN:/opt/unixsuite/$CONTENT $SVRPATH/ 2>&1 &
-    PID=$!
-
-# wait for the specified number of seconds for scp to complete
-# if the timeout is exceeded, kill the process and move on to the next box
-
-# .2 seems to pause enough for the scp command to finish without taking a full second for each system.
-    /usr/bin/perl -e 'select(undef,undef,undef,.2)'
-    /usr/bin/ps -p $PID > /dev/null 2>&1
-    if [[ $? -eq 0 ]]
-    then
-      while [[ $TIMEOUT -gt 0 ]]
-      do
-        /usr/bin/ps -p $PID > /dev/null 2>&1
-        if [[ $? -ne 0 ]]
-        then
-          break
-        fi
-        TIMEOUT=$(($TIMEOUT - 1))
-        sleep 1
-      done
-
-# if the timeout reaches 0, then the process was killed. Report something.
-      if [[ $TIMEOUT -le 0 ]]
-      then
-        echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
-        echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
-        chmod 664 $SVRPATH/config.status
-        chmod 664 $SVRPATH/morning.status
-        kill -KILL $PID
-      fi
+      echo "ERROR: Unable to connect to server (${PROGNAME})" >> ${SVRPATH}/config.status
+      echo "ERROR: Unable to connect to server (${PROGNAME})" >> ${SVRPATH}/morning.status
+      chmod 664 ${SVRPATH}/config.status
+      chmod 664 ${SVRPATH}/morning.status
+      kill -KILL ${PID}
     fi
   fi
 
