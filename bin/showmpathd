@@ -3,9 +3,28 @@
 # showmpathd
 #    prints the web page report
 
-ADMIN=/usr/local/admin
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="showmpathd"
+
 BGCOLOR="CCCCCC"
-PHP=/usr/local/httpd/htsecure/reports/mpathd.php
+PHP="${REPORTS}/mpathd.php"
 
 echo "<?php" > $PHP
 echo "  include('../login/check.php');" >> $PHP
@@ -50,7 +69,7 @@ echo "  <th title=\"Failback to original interface when available again.\"><font
 echo "  <th title=\"Only track interfaces in an IPMP group.\"><font bgcolor=$BGCOLOR size=\"-2\">Track Interfaces Only With Groups</font></th>" >> $PHP
 echo "</tr>" >> $PHP
 
-for i in `grep -v "^#" $ADMIN/etc/servers | grep SunOS`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | grep SunOS`
 do
   SERVER=`echo $i | cut -f1 -d:`
 
@@ -61,7 +80,7 @@ do
     BGCOLOR="EEEEEE"
   fi
 
-  if [[ ! -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  if [[ ! -f ${ADMIN}/servers/$SERVER/mpathd.output ]]
   then
     echo "<tr bgcolor=$BGCOLOR>" >> $PHP
     echo "  <td><font bgcolor=$BGCOLOR size="-2" color=red>$SERVER</font></td>" >> $PHP
@@ -73,9 +92,9 @@ do
   PRE="red"
   VAL1=""
   TITLE='title="10000"'
-  if [[ -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  if [[ -f ${ADMIN}/servers/$SERVER/mpathd.output ]]
   then
-    VAL1=`/bin/grep "^FAILURE_DETECTION_TIME" $ADMIN/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
+    VAL1=`/bin/grep "^FAILURE_DETECTION_TIME" ${ADMIN}/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
   fi
   if [[ "$VAL1" = "10000" ]]
   then
@@ -86,9 +105,9 @@ do
   PRE="red"
   VAL1=""
   TITLE='title="yes"'
-  if [[ -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  if [[ -f ${ADMIN}/servers/$SERVER/mpathd.output ]]
   then
-    VAL1=`/bin/grep "^FAILBACK" $ADMIN/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
+    VAL1=`/bin/grep "^FAILBACK" ${ADMIN}/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
   fi
   if [[ "$VAL1" = "yes" ]]
   then
@@ -99,9 +118,9 @@ do
   PRE="red"
   VAL1=""
   TITLE='title="yes"'
-  if [[ -f $ADMIN/servers/$SERVER/mpathd.output ]]
+  if [[ -f ${ADMIN}/servers/$SERVER/mpathd.output ]]
   then
-    VAL1=`/bin/grep "^TRACK_INTERFACES_ONLY_WITH_GROUP" $ADMIN/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
+    VAL1=`/bin/grep "^TRACK_INTERFACES_ONLY_WITH_GROUP" ${ADMIN}/servers/$SERVER/mpathd.output | /bin/awk -F= '{print $NF}'`
   fi
   if [[ "$VAL1" = "yes" ]]
   then
