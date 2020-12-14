@@ -3,10 +3,27 @@
 # getiostat - Retrieve the iostat -En output from all Sun boxes
 # Owner: Carl Schelin
 
-PROGNAME="getiostat"
-LOC=/usr/local/admin
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
 
-for i in `grep -v "^#" $LOC/etc/servers|grep SunOS`
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! ${RUNBY} -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="getiostat"
+
+for i in `grep -v "^#" ${ADMIN_DATA}/servers|grep SunOS`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -14,7 +31,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
