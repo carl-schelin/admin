@@ -3,11 +3,30 @@
 # chkcfg2html - performs a daily check to make sure the cfg2html file has been captured at the beginning of the month
 # Owner: Carl Schelin
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="processetc"
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
 PROGNAME="chkcfg2html"
 DATE=`date +"%Y%m"`
-CFG="/var/apache2/htsecure/cfg2html"
+CFG="${HTTPD}/cfg2html"
 DDIR="$CFG/$DATE"
-LOC=/usr/local/admin
 
 if [[ ! -d $DDIR ]]
 then
@@ -15,11 +34,11 @@ then
   chmod 775 $DDIR
 fi
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
 # Check to make sure the target directory exists
 # if not, create it and set the perms
@@ -37,12 +56,12 @@ do
   then
     if [[ $OS = "Linux" ]]
     then
-      CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+      CREATED=`egrep "Created (200|201|202)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
       DATE=`echo $CREATED | cut -f2 -d\ `
     fi
     if [[ $OS = "SunOS" ]]
     then
-      CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+      CREATED=`egrep "Created (200|201|202)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
       DATE=`echo $CREATED | cut -f2 -d\ `
     fi
     if [[ $OS = "FreeBSD" ]]
@@ -71,35 +90,9 @@ do
       DATE="$YEAR-$MON"
 
     fi
-    if [[ $OS = "OSF1" ]]
-    then
-      CREATED=`grep "^Run on" $DDIR/$SERVER.html`
-      DATE=`echo $CREATED | awk '{print $4" "$5" "$8}'`
-
-      MON=`echo $DATE | cut -f1 -d\ `
-      YEAR=`echo $DATE | cut -f3 -d\ `
-
-      case $MON in 
-        Jan) MON=01 ;;
-        Feb) MON=02 ;;
-        Mar) MON=03 ;;
-        Apr) MON=04 ;;
-        May) MON=05 ;;
-        Jun) MON=06 ;;
-        Jul) MON=07 ;;
-        Aug) MON=08 ;;
-        Sep) MON=09 ;;
-        Oct) MON=10 ;;
-        Nov) MON=11 ;;
-        Dec) MON=12 ;;
-      esac
-
-      DATE="$YEAR-$MON"
-
-    fi
     if [[ $OS = "HP-UX" ]]
     then
-      CREATED=`grep "Created 201" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
+      CREATED=`egrep "Created (200|201|202)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
       DATE=`echo $CREATED | head -1 | awk '{print $2}'`
     fi
 
