@@ -1,6 +1,26 @@
 #!/bin/ksh
 
-PHP=/usr/local/httpd/htsecure/reports/sudoers.php
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="showsudo"
+
+PHP="${REPORTS}/sudoers.php"
 
 echo "<?php" > $PHP
 echo "  include('../login/check.php');" >> $PHP
@@ -19,14 +39,14 @@ echo "  <th>System</th>" >> $PHP
 echo "  <th>TMPROOT</th>" >> $PHP
 echo "</tr>" >> $PHP
 
-for i in `grep -v "^#" /usr/local/admin/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:`
 do
-  if [[ -f /usr/local/admin/servers/$i/chksudo.output ]]
+  if [[ -f ${ADMIN}/servers/$i/chksudo.output ]]
   then
     echo "<tr>" >> $PHP
     echo "  <td>$i</td>" >> $PHP
     echo "  <td>" >> $PHP
-    cat /usr/local/admin/servers/$i/chksudo.output >> $PHP
+    cat ${ADMIN}/servers/$i/chksudo.output >> $PHP
     echo "</td>" >> $PHP
     echo "</tr>" >> $PHP
   fi
