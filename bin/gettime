@@ -6,13 +6,30 @@
 # 02/23/2010 - Changed LOCAL to 127.127.1.0
 # 05/19/2016 - Renamed to gettime due to red hat 7 using chrony vs ntp
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! ${RUNBY} -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
 PROGNAME="gettime"
-INTRADO="/opt/intrado"
-LOC=/usr/local/admin
+
 GPSNTP1="10.100.228.31"
 GPSNTP2="192.168.200.20"
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -21,7 +38,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -40,7 +57,7 @@ do
     rm $SVRPATH/$CONTENT.output
   fi
 
-  /usr/bin/scp $SERVER:$INTRADO/etc/$CONTENT.output $SVRPATH/$CONTENT.output &
+  /usr/bin/scp $SERVER:${SCRIPTS_LOGS}/$CONTENT.output $SVRPATH/$CONTENT.output &
   PID=$!
 
 # wait for the specified number of seconds for ssh to complete
@@ -91,16 +108,16 @@ do
 # ntpq -np
 #     remote           refid      st t when poll reach   delay   offset    disp
 #==============================================================================
-#*10.100.228.31   .GPS.            1 u   90 1024  377     0.29    0.002    0.06
-#+192.168.200.20  .GPS.            1 u  654 1024  377    57.59   -1.207    0.23
+#*[TIMESOURCE1]   .GPS.            1 u   90 1024  377     0.29    0.002    0.06
+#+[TIMESOURCE2]   .GPS.            1 u  654 1024  377    57.59   -1.207    0.23
 # 127.127.1.0     127.127.1.0     10 u    -   64    0     0.00    0.000 16000.0
 
 # chronyc -n sources
 #210 Number of sources = 2
 #MS Name/IP address         Stratum Poll Reach LastRx Last sample
 #===============================================================================
-#^* 10.100.228.31                 1   9   377   162    +14us[  +20us] +/-  871us
-#^- 192.168.200.20                1   9   377   286   +605us[ +611us] +/-   33ms
+#^* [TIMESOURCE1]                 1   9   377   162    +14us[  +20us] +/-  871us
+#^- [TIMESOURCE2]                 1   9   377   286   +605us[ +611us] +/-   33ms
 
   COUNT=`/usr/bin/wc -l $SVRPATH/$CONTENT.output | /usr/bin/awk '{print $1}'`
   if [ -f $SVRPATH/$CONTENT.output ] && [ $COUNT -gt 1 ]
@@ -115,27 +132,27 @@ do
         chmod 664 $SVRPATH/morning.status
       fi
     done
-# if gpsntp1 or gpsntp2 is configured, expect that the other server is also configured or report an error.
-    /usr/bin/grep $GPSNTP1 $SVRPATH/$CONTENT.output > /dev/null
+# if the two time sources are configured, expect that the both servers are configured or report an error.
+    /usr/bin/grep ${TIMESOURCE1} $SVRPATH/$CONTENT.output > /dev/null
     if [ $? -eq 0 ]
     then
-      /usr/bin/grep $GPSNTP2 $SVRPATH/$CONTENT.output > /dev/null
+      /usr/bin/grep ${TIMESOURCE2} $SVRPATH/$CONTENT.output > /dev/null
       if [ $? -eq 1 ]
       then
-        echo "WARNING: gpsntp1 ($GPSNTP1) is configured but not gpsntp2 ($GPSNTP2)" >> $SVRPATH/config.status
-        echo "WARNING: gpsntp1 ($GPSNTP1) is configured but not gpsntp2 ($GPSNTP2)" >> $SVRPATH/morning.status
+        echo "WARNING: ${TIMESOURCE1} is configured but not ${TIMESOURCE2}" >> $SVRPATH/config.status
+        echo "WARNING: ${TIMESOURCE1} is configured but not ${TIMESOURCE2}" >> $SVRPATH/morning.status
         chmod 664 $SVRPATH/config.status
         chmod 664 $SVRPATH/morning.status
       fi
     fi
-    /usr/bin/grep $GPSNTP2 $SVRPATH/$CONTENT.output > /dev/null
+    /usr/bin/grep ${TIMESOURCE2} $SVRPATH/$CONTENT.output > /dev/null
     if [ $? -eq 0 ]
     then
-      /usr/bin/grep $GPSNTP1 $SVRPATH/$CONTENT.output > /dev/null
+      /usr/bin/grep ${TIMESOURCE1} $SVRPATH/$CONTENT.output > /dev/null
       if [ $? -eq 1 ]
       then
-        echo "WARNING: gpsntp2 ($GPSNTP2) is configured but not gpsntp1 ($GPSNTP1)" >> $SVRPATH/config.status
-        echo "WARNING: gpsntp2 ($GPSNTP2) is configured but not gpsntp1 ($GPSNTP1)" >> $SVRPATH/morning.status
+        echo "WARNING: ${TIMESOURCE2} is configured but not ${TIMESOURCE1}" >> $SVRPATH/config.status
+        echo "WARNING: ${TIMESOURCE2} is configured but not ${TIMESOURCE1}" >> $SVRPATH/morning.status
         chmod 664 $SVRPATH/config.status
         chmod 664 $SVRPATH/morning.status
       fi
