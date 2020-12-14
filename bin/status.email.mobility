@@ -15,7 +15,7 @@ fi
 . "${DIRNAME}"/../.config
 
 WHOCARES="mobility.sys.admin@west.com"
-LOG="${SCRIPTS}/output/status.mobility"
+LOG="${ADMIN}/output/status.mobility"
 SEND="0"
 TODAY=`date +"%w"`
 
@@ -24,10 +24,10 @@ then
   rm $LOG
 fi
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ -f $SVRPATH/config.mobility.status ]
   then

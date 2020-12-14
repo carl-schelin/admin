@@ -39,15 +39,15 @@ echo $$ > /var/tmp/$PROGNAME.pid
 # check to see if the server passed exists in the server listing or if it equals '[A|a]ll', otherwise exit without error
 if [[ -z $1 ]]
 then
-  SERVERLIST=`grep -v "^#" ${SCRIPTS_ETC}/powerlist`
+  SERVERLIST=`grep -v "^#" ${ADMIN_DATA}/powerlist`
   SINGLESERVER="no"
 else
   if [[ $1 = "all" || $1 = "All" || $1 = "ALL" ]]
   then
-    SERVERLIST=`grep -v "^#" ${SCRIPTS_ETC}/powerlist`
+    SERVERLIST=`grep -v "^#" ${ADMIN_DATA}/powerlist`
     SINGLESERVER="no"
   else
-    /usr/bin/grep -i "^${1}:" ${SCRIPTS_ETC}/powerlist > /dev/null
+    /usr/bin/grep -i "^${1}:" ${ADMIN_DATA}/powerlist > /dev/null
     if [[ $? -ne 0 ]]
     then
       exit 0
@@ -71,7 +71,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -160,9 +160,9 @@ then
   if [[ $SINGLESERVER = "yes" ]]
   then
     echo "$SERVERLIST was successfully contacted" | /usr/bin/tee $MAIL
-    if [[ -f ${SCRIPTS}/servers/$SERVERLIST/uptime.output ]]
+    if [[ -f ${ADMIN}/servers/$SERVERLIST/uptime.output ]]
     then
-      cat ${SCRIPTS}/servers/$SERVERLIST/uptime.output | /usr/bin/tee -a $MAIL
+      cat ${ADMIN}/servers/$SERVERLIST/uptime.output | /usr/bin/tee -a $MAIL
     else
       echo "WARNING: The unixsvc account was able to access the server but unable to run the uptime command. History shows the unixsvc account has been disabled. Please investigate." | /usr/bin/tee -a $MAIL
     fi

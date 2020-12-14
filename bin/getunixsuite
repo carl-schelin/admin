@@ -7,10 +7,10 @@
 # during the day should have their own entries in cron
 #
 # Changelog:
-# 2012-07-30 - Initial convert system based intrado script to central host based intrado script
+# 2012-07-30 - Initial convert system based company script to central host based company script
 # 2012-09-28 - Start off with a few scripts and add new ones in as we go along.
 # 2012-10-02 - Correct script location in the runscript function.
-# 2012-10-03 - Changed script name and log file from intrado to getunixsuite to avoid confusion with the other master "intrado" script.
+# 2012-10-03 - Changed script name and log file from company to getunixsuite to avoid confusion with the other master "company" script.
 # 2013-11-07 - Changed entry from "runscript getunixsuite" to "runscript getunixsuitelogs".
 # 2014-10-07 - Added getbash script
 # 2014-11-09 - Added getpackages script
@@ -20,10 +20,12 @@
 # 2015-09-13 - disabled timeout in the function; scripts should already have an individual server timeout.
 # 2016-12-08 - moved to /usr/local/admin/bin directory and fixed locations of getunixsuite.log file
 
-SCRIPT=/usr/local/admin
-INTRADO=$SCRIPT/bin
+SCRIPTS=/usr/local/admin
+SCRIPTS_BINS=${SCRIPTS}/bin
+SCRIPTS_DATA=${SCRIPTS}/etc
+SCRIPTS_LOGS=${SCRIPTS}/logs
 HOSTNAME=`hostname|cut -f1 -d.`
-LOG=$SCRIPT/logs/getunixsvc/getunixsvc.log
+LOG=$SCRIPT_LOGS/getunixsvc/getunixsvc.log
 EXITCODE=0
 OS=`uname`
 DATE=`date +"%Y%m%d"`
@@ -41,18 +43,18 @@ then
 fi
 
 # ensure directory exists and is writeable
-if [[ ! -d $INTRADO/logs/getunixsvc ]]
+if [[ ! -d $SCRIPTS_LOGS/getunixsvc ]]
 then
-  mkdir -p $INTRADO/logs/getunixsvc
-  chown unixsvc:sysadmin $INTRADO/logs/getunixsvc
-  chmod 770 $INTRADO/logs/getunixsvc
+  mkdir -p $SCRIPTS_LOGS/getunixsvc
+  chown unixsvc:sysadmin $SCRIPTS_LOGS/getunixsvc
+  chmod 770 $SCRIPTS_LOGS/getunixsvc
 fi
 
 echo "`date` getunixsvc script started" >> $LOG
 
-# First ensure the intrado directory structure is owned properly so data files can be written
-chown -R unixsvc:sysadmin $INTRADO/logs/getunixsvc
-chmod -R 770 $INTRADO/logs/getunixsvc
+# First ensure the unixsuite directory structure is owned properly so data files can be written
+chown -R unixsvc:sysadmin $SCRIPTS_LOGS/getunixsvc
+chmod -R 770 $SCRIPTS_LOGS/getunixsvc
 
 # function to run the scripts and set a timeout. this ensures all scripts exit before the final cleanup
 runscript () {
@@ -172,7 +174,7 @@ runscript getspace
 # runs an iostat -En - Want current info, not info from 1am
 runscript getiostat
 
-# gets the system and sysctl.conf files from their installed locations vs /opt/intrado/etc
+# gets the system and sysctl.conf files from their installed locations vs /opt/unixsuite/etc
 runscript getkernel
 
 # checks the mount status on linux systems
@@ -218,7 +220,7 @@ echo "`date` getunixsuite script ended" >> $LOG
 echo "======================" >> $LOG
 
 # Clean up the old data files in case they exist.
-find $INTRADO/logs/getunixsuite -atime +1 -exec rm {} \;
+find $SCRIPTS_LOGS/getunixsuite -atime +1 -exec rm {} \;
 
 exit $EXITCODE
 

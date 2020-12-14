@@ -26,7 +26,7 @@ fi
 # start time of the push
 date
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   DOMAIN=`echo $i|cut -f2 -d:`
@@ -37,7 +37,7 @@ do
 
   echo $SERVER
 
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -65,9 +65,9 @@ do
 
     if [[ $j = '.config' ]]
     then
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/.config $TARGET:/opt/unixsuite/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/.config $TARGET:/opt/unixsuite/ &
     else
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/$j/* $TARGET:/opt/unixsuite/$j/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/$j/* $TARGET:/opt/unixsuite/$j/ &
     fi
     PID=$!
 
@@ -112,24 +112,24 @@ do
   then
     if [[ $OS = 'Linux' ]]
     then
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/install $TARGET:/opt/unixsuite/rrdtool/install/ &
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/runstats $TARGET:/opt/unixsuite/rrdtool/ &
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/linux/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/linux/install $TARGET:/opt/unixsuite/rrdtool/install/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/linux/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/linux/runstats $TARGET:/opt/unixsuite/rrdtool/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/linux/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
     fi
     if [[ $OS = 'SunOS' ]]
     then
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/install $TARGET:/opt/unixsuite/rrdtool/install/ &
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/runstats $TARGET:/opt/unixsuite/rrdtool/ &
-      /usr/bin/scp -r ${SCRIPTS}/install/unixsuite/install/rrdtool/solaris/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/solaris/install $TARGET:/opt/unixsuite/rrdtool/install/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/solaris/scripts $TARGET:/opt/unixsuite/rrdtool/scripts/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/solaris/runstats $TARGET:/opt/unixsuite/rrdtool/ &
+      /usr/bin/scp -r ${ADMIN}/install/unixsuite/install/rrdtool/solaris/watchrrd $TARGET:/opt/unixsuite/rrdtool/ &
     fi
   fi
 
 done
 
 # finally, recreate the kickstart install file
-cd ${SCRIPTS}/install
+cd ${ADMIN}/install
 rm unixsuite.tar.gz
 tar cfv unixsuite.tar unixsuite
 gzip -9 unixsuite.tar

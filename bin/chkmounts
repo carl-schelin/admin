@@ -23,7 +23,7 @@ then
   exit 0
 fi
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers | grep Linux | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | grep Linux | cut -f1 -d:`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -32,7 +32,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then

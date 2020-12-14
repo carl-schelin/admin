@@ -16,11 +16,11 @@ SCRIPTS_LOGS="${SCRIPTS}/var"
 
 if [[ ! -d ${SCRIPTS} ]]
 then
-  echo "Intrado scripts have not been installed."
+  echo "Unixsuite scripts have not been installed."
 else
   if [[ ! -f ${SCRIPTS_LOGS}/unixsuite.log ]]
   then
-    echo "Intrado script has not been run yet."
+    echo "The Unixsuite script has not been run yet."
   else
     RUNDATE=`ls -l ${SCRIPTS_LOGS}/unixsuite.log | awk '{print $7}'`
     TODAY=`date +"%d"`

@@ -3,12 +3,23 @@
 # escalation - Report on a specific set of discovered issues
 # Carl Schelin
 
-ADMIN=/usr/local/admin
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="escalation"
+
 GREP="(31m|33m)"
 ERROR="(Must be corrected due to vulnerability or system stability issue|Setting should be reviewed and corrected if appropriate)"
-LOG="${ADMIN}/logs/escalation.log"
-WHOCARES="cschelin@west.com"
-WHOCARES="unixadmins@intrado.com"
+LOG="${ADMIN_LOGS}/escalation.log"
 
 ESCALATION="("
 
@@ -59,13 +70,13 @@ OLDREPORT=""
 
 DATECHECK=`date +"%Y%m%d"`
 
-echo "Escalation Dashboard: https://incojs01.scc911.com/inventory/manage/manage.php?group=1&product=0" > $LOG
+echo "Escalation Dashboard: ${INVENTORY}/manage/manage.php?group=1&product=0" > $LOG
 echo "" >> $LOG
 
-for i in `grep -v "^#" ${ADMIN}/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:`
 do
   echo $i
-  scp ${i}:/opt/intrado/etc/chkserver.output ${ADMIN}/servers/${i}/
+  scp ${i}:${SCRIPTS_DATA}/chkserver.output ${ADMIN}/servers/${i}/
   if [[ -f ${ADMIN}/servers/${i}/chkserver.output ]]
   then
 # only process if the report is completed

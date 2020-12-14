@@ -28,10 +28,10 @@ MON=`date +"%m"`
 MONTH=`date +"%B"`
 DAY=`date +"%d"`
 YEAR=`date +"%Y"`
-LOG="${SCRIPTS}/output/status"
-USER="${SCRIPTS}/output/status.user"
-WARNING="${SCRIPTS}/output/status.warning"
-ERROR="${SCRIPTS}/output/status.error"
+LOG="${ADMIN}/output/status"
+USER="${ADMIN}/output/status.user"
+WARNING="${ADMIN}/output/status.warning"
+ERROR="${ADMIN}/output/status.error"
 HTML="/var/apache2/htsecure/status/status.${YEAR}${MON}${DAY}.html"
 # activate to see additional messages on the command line. If debug is active, e-mail will not be sent
 #DEBUG="Yes"
@@ -81,11 +81,11 @@ echo "on the perceived severity. Resolving the problem consists of going in to t
 echo "file over the same named <b>.good</b> file." >> $HTML
 echo "" >> $HTML
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -z "$DEBUG" ]; then echo "Server: $SERVER"; fi
 
@@ -213,7 +213,7 @@ do
 # check the status of the messages file.
   if [ ! -z "$DEBUG" ]; then echo "Checking messages"; fi
 
-  MSGDATE=`cat ${SCRIPTS}/servers/messages.date`
+  MSGDATE=`cat ${ADMIN}/servers/messages.date`
 
   if [[ -f $SVRPATH/messages.$MSGDATE ]]
   then

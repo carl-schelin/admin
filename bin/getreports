@@ -1,16 +1,20 @@
 #!/bin/ksh
 
 # getreports - Carl Schelin - 2012-03-01
-# Script to manage the intrado data retrieval scripts
+# Script to manage the data retrieval scripts
 #
 # Note: This script only runs the one-time only scripts. Anything that needs to run often 
-# during the day such as chkov or the rrdtool scripts should have their own entries in cron
+# during the day such as suitecheck or the rrdtool scripts should have their own entries in cron
 #
 # Changelog:
 
-INTRADO=/usr/local/admin
+SCRIPTS=/usr/local/admin
+SCRIPTS_BINS=$SCRIPTS/bin
+SCRIPTS_DATA=$SCRIPTS/etc
+SCRIPTS_VARS=$SCRIPTS/var
+SCRIPTS_LOGS=$SCRIPTS/logs
 HOSTNAME=`hostname|cut -f1 -d.`
-LOG=$INTRADO/var/intrado.log
+LOG=$SCRIPTS_VARS/getreports.log
 EXITCODE=0
 OS=`uname`
 DATE=`date +"%Y%m%d"`
@@ -20,31 +24,31 @@ DOWEEK=`date +"%u"`
 DOMONTH=`date +"%d"`
 
 # ensure directories exist and are writeable
-if [[ ! -d $INTRADO/var ]]
+if [[ ! -d $SCRIPTS_VARS ]]
 then
-  mkdir -p $INTRADO/var
-  chown unixsvc:sysadmin $INTRADO/var
-  chmod 770 $INTRADO/var
+  mkdir -p $SCRIPTS_VARS
+  chown unixsvc:sysadmin $SCRIPTS_VARS
+  chmod 770 $SCRIPTS_VARS
 fi
-if [[ ! -d $INTRADO/etc ]]
+if [[ ! -d $SCRIPTS_DATA ]]
 then
-  mkdir -p $INTRADO/etc
-  chown unixsvc:sysadmin $INTRADO/etc
-  chmod 770 $INTRADO/etc
+  mkdir -p $SCRIPTS_DATA
+  chown unixsvc:sysadmin $SCRIPTS_DATA
+  chmod 770 $SCRIPTS_DATA
 fi
 
-echo "`date` intrado script started" >> $LOG
+echo "`date` reports script started" >> $LOG
 
-# First ensure the /opt/intrado directory structure is owned properly so data files can be written
-chown -R unixsvc:sysadmin $INTRADO
-chmod -R 770 $INTRADO
+# First ensure the /opt/unixsuite directory structure is owned properly so data files can be written
+chown -R unixsvc:sysadmin $SCRIPTS
+chmod -R 770 $SCRIPTS
 
 # function to run the scripts and set a timeout. this ensures all scripts exit before the final cleanup
 runscript () {
 
-  if [[ -f $INTRADO/bin/$1 ]]
+  if [[ -f $SCRIPTS_BINS/$1 ]]
   then
-    $INTRADO/bin/$1 >> $LOG &
+    $SCRIPTS_BINS/$1 >> $LOG &
     PID=$!
 
 # really just waiting for the scripts to end. don't expect it to take long.
@@ -128,9 +132,9 @@ then
 # run cfg2html on the first of the month
   if [[ $OS = "FreeBSD" ]]
   then
-    $INTRADO/cfghtml/cfg2html > $INTRADO/cfghtml/$HOSTNAME.html
+    $SCRIPTS/cfghtml/cfg2html > $SCRIPTS/cfghtml/$HOSTNAME.html
   else
-    $INTRADO/cfghtml/cfg2html >> $LOG
+    $SCRIPTS/cfghtml/cfg2html >> $LOG
   fi
 
 # run explorer if it exists
@@ -177,7 +181,7 @@ then
 # make a backup of the anaconda kickstart config file
   if [[ -f /root/anaconda-ks.cfg ]]
   then
-    cp -p /root/anaconda-ks.cfg $INTRADO/etc/ >> $LOG
+    cp -p /root/anaconda-ks.cfg $SCRIPTS_DATA >> $LOG
   fi
 
 # ensure log files are set up correctly
@@ -283,7 +287,7 @@ fi
 # make sure it matches `hostname` and not what is used to access the host as that 
 # can be two different things.
 
-if [[ -f $INTRADO/bin/$HOSTNAME ]]
+if [[ -f $SCRIPTS_BINS/$HOSTNAME ]]
 then
   runscript $HOSTNAME
 fi
@@ -292,14 +296,14 @@ fi
 # hostname of the server as the file name to execute scripts on Sunday's run.
 if [[ $DOWEEK = "07" ]]
 then
-  if [[ -f $INTRADO/bin/$HOSTNAME.weekly ]]
+  if [[ -f $SCRIPTS_BINS/$HOSTNAME.weekly ]]
   then
     runscript $HOSTNAME.weekly
   fi
 fi
 
 # And finish the log
-echo "`date` intrado script ended" >> $LOG
+echo "`date` report script ended" >> $LOG
 echo "======================" >> $LOG
 
 # Roll and compress the logs at the beginning of the month
@@ -310,12 +314,12 @@ then
   gzip -9 $LOG.$DATE
 fi
 
-# Ensure the /opt/intrado directory structure is owned properly so data files can be read
-chown -R unixsvc:sysadmin $INTRADO
-chmod -R 770 $INTRADO
+# Ensure the /opt/unixsuite directory structure is owned properly so data files can be read
+chown -R unixsvc:sysadmin $SCRIPTS
+chmod -R 770 $SCRIPTS
 
 # Clean up the old data files in case they exist.
-find $INTRADO/etc -atime +1 -exec rm {} \;
+find $SCRIPTS_DATA -atime +1 -exec rm {} \;
 
 exit $EXITCODE
 

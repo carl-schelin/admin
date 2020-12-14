@@ -6,7 +6,7 @@
 # 2/6/09 - TO - Reveresed the order of the index page to most recent first
 # 10/8/09 - TO - added Canada servers to renamed portion
 # 10/1/10 - Pietras - added miamflcsmla15 to renamed portion as "n1" 
-# 10/2/11 - CS - Changed the retrieval location to /opt/intrado/cfghtml
+# 10/2/11 - CS - Changed the retrieval location to /opt/[scripts]/cfghtml
 # 10/2/11 - CS - rewrote the script to retrieve an actual file name vs *.html 
 #   as some servers have the same internal name so files are overwritten.
 # 6/24/13 - CS - Modified code to permit passing a single server to make it
@@ -26,15 +26,15 @@ then
   exit 1
 fi
 
-# Source the configuration file
+# shellcheck source=/dev/null
 . "${DIRNAME}"/../.config
 
 CFG="/var/apache2/htsecure/cfg2html"
-DATE=`date +"%Y%m"`
+DATE=$(date +"%Y%m")
 FORCE="no"
 PROGNAME="getcfg2html"
 
-if [[ ! $RUNBY -eq 5000 ]]
+if [[ ! ${RUNBY} -eq 5000 ]]
 then
   echo "This script must be run by the Unix Service account."
   exit 0
@@ -42,12 +42,12 @@ fi
 
 FORCE="no"
 REBUILD="no"
-SERVERLIST=`grep -v "^#" ${SCRIPTS_ETC}/servers`
+SERVERLIST=$(grep -v "^#" ${ADMIN_DATA}/servers)
 
 while getopts d:fhrs: VARS
 do
   case $VARS in
-    d) DATE="$OPTARG"
+    d) DATE="${OPTARG}"
        ;;
     f) FORCE="yes"
        ;;
@@ -55,23 +55,23 @@ do
        ;;
     r) REBUILD="yes"
        ;;
-    s) SERVERLIST=`grep "^${OPTARG}:" ${SCRIPTS_ETC}/servers`
+    s) SERVERLIST=$(grep "^${OPTARG}:" ${ADMIN_DATA}/servers)
        HTML=""
        ;;
   esac
 done
 
-if [[ $REBUILD = 'no' ]]
+if [[ ${REBUILD} = 'no' ]]
 then
-  DATE=`date +"%Y%m"`
+  DATE=$(date +"%Y%m")
 fi
-DDIR="$CFG/$DATE"
-HTML="$DDIR/index.html"
-YEAR=`echo $DATE | cut -c1-4`
-MON=`echo $DATE | cut -c5-6`
-CHKDATE="$YEAR-$MON"
+DDIR="${CFG}/${DATE}"
+HTML="${DDIR}/index.html"
+YEAR=$(echo ${DATE} | cut -c1-4)
+MON=$(echo ${DATE} | cut -c5-6)
+CHKDATE="${YEAR}-${MON}"
 
-if [[ "$HELP" = "yes" ]] 
+if [[ "${HELP}" = "yes" ]] 
 then
   echo "Usage:"
   echo "  getcfg2html -d [YYYYMM] -f -h -r -s [servername]"
@@ -84,617 +84,62 @@ then
   exit 0
 fi
 
-if [[ ! -d $DDIR ]]
+if [[ ! -d ${DDIR} ]]
 then
-  mkdir $DDIR
-  chmod 775 $DDIR
+  mkdir ${DDIR}
+  chmod 775 ${DDIR}
 fi
 
-if [[ ! $HTML == "" ]]
+if [[ ! ${HTML} == "" ]]
 then
-  echo "<html>" > $HTML
-  echo "<head>" >> $HTML
-  echo "<title>Config2HTML $DATE</title>" >> $HTML
-  echo "<h3 align=center>Config2HTML $DATE</h3>" >> $HTML
-  echo "</head>" >> $HTML
-  echo "<body>" >> $HTML
-  echo "" >> $HTML
-  echo "<ul>" >> $HTML
+  echo "<html>" > ${HTML}
+  echo "<head>" >> ${HTML}
+  echo "<title>Config2HTML ${DATE}</title>" >> ${HTML}
+  echo "<h3 align=center>Config2HTML ${DATE}</h3>" >> ${HTML}
+  echo "</head>" >> ${HTML}
+  echo "<body>" >> ${HTML}
+  echo "" >> ${HTML}
+  echo "<ul>" >> ${HTML}
 fi
 
-for i in $SERVERLIST
+for i in ${SERVERLIST}
 do
-  SERVER=`echo $i|cut -f1 -d:`
-  OS=`echo $i|cut -f3 -d:`
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SERVER=$(echo ${i}|cut -f1 -d:)
+  OS=$(echo ${i}|cut -f3 -d:)
+  SVRPATH="${ADMIN_DATA}/servers/${SERVER}"
 
-# some servers are slow to respond (infloas1 for example)
+# some servers are slow to respond
   TIMEOUT=90
 
-# The purpose here is to have the name of the server from the server file ($SERVER) be 
-# matched with the server hostname which can be different due to the application interface 
-# having a different name. 
+# the issue is with dual interface systems, the name of the cfg2html file will be HOSTNAME
+# which won't match the management interface DNS name.
+# this section pulls the HOSTNAME from the translation file if it exists. If not, it sets it 
+# to the inventory name so we know which file to copy and which one to parse.
 
-#   SERVER name from list)	server HOSTNAME as seen in /opt/intrado/cfghtml/*.html
-  case $SERVER in
-    alde0duasneap11)		HOSTNAME=alde0duasneap10	;;
-    alde0duasnelb11)		HOSTNAME=alde0duasnelb10	;;
-    alde0duasnenx11)		HOSTNAME=alde0duasnenx10	;;
-    alde0euasneap51)		HOSTNAME=alde0euasneap50	;;
-    alde0euasnedc11)		HOSTNAME=alde0euasnedc10	;;
-    alde0euasneelb11)		HOSTNAME=alde0euasneelb10	;;
-    alde0euasnesa11)		HOSTNAME=alde0euasnesa10	;;
-    alde0euasnesl11)		HOSTNAME=alde0euasnesl10	;;
-    alde0eudcnedb11)		HOSTNAME=alde0eudcnedb10	;;
-    alde0eudcnedb21)		HOSTNAME=alde0eudcnedb20	;;
-    alde0euomknode11)		HOSTNAME=alde0euomknode10	;;
-    alde0euomknode21)		HOSTNAME=alde0euomknode20	;;
-    alde0euomknode31)		HOSTNAME=alde0euomknode30	;;
-    alde0euomkube11)		HOSTNAME=alde0euomkube10	;;
-    alde0euomkube21)		HOSTNAME=alde0euomkube20	;;
-    alde0euomkube31)		HOSTNAME=alde0euomkube30	;;
-    arad31)			HOSTNAME=arad30			;;
-    arad41)			HOSTNAME=arad40			;;
-    calgcadcgrt11)		HOSTNAME=calgcadcgrt10		;;
-    calgcadcgrt21)		HOSTNAME=calgcadcgrt20		;;
-    coolcadccba10)		HOSTNAME=coolcadccba01		;;
-    coolcadccba20)		HOSTNAME=coolcadccba02		;;
-    coolcadccba13)		HOSTNAME=coolcadccba03		;;
-    coolcadccba14)		HOSTNAME=coolcadccba04		;;
-    coolcadceg11)		HOSTNAME=coolcadceg10		;;
-    coolcadceg21)		HOSTNAME=coolcadceg20		;;
-    coolcadcem11)		HOSTNAME=coolcadcem10		;;
-    coolcadcem21)		HOSTNAME=coolcadcem20		;;
-    coolcadcew11)		HOSTNAME=coolcadcew10		;;
-    coolcadcew21)		HOSTNAME=coolcadcew20		;;
-    coolcadctxb1)		HOSTNAME=coolcadctxb0		;;
-    dalnagios)			HOSTNAME=hbfausoss02.intrado.com	;;
-    dalora)			HOSTNAME=dal-ora		;;
-    denora)			HOSTNAME=den-ora		;;
-    dthvcadcbta1b)		HOSTNAME=dthvcadcbta1b.scc911.com	;;
-    dthvcadccba10)		HOSTNAME=dthvcadccba01		;;
-    dthvcadccba20)		HOSTNAME=dthvcadccba02		;;
-    dthvcadctxb1)		HOSTNAME=dthvcadctxb0		;;
-    enwdcodctxb1)		HOSTNAME=enwdcodctxb0		;;
-    hnllhicsdca11)		HOSTNAME=hnllhicsdca10		;;
-    hnllhicsdca21)		HOSTNAME=hnllhicsdca20		;;
-    hnllhicslga11)		HOSTNAME=hnllhicslga10		;;
-    hnllhiecada11)		HOSTNAME=hnllhiecada10		;;
-    hnllhiecadb11)		HOSTNAME=hnllhiecadb10		;;
-    hnllhiecdca11)		HOSTNAME=hnllhiecdca10		;;
-    hnllhiecdca21)		HOSTNAME=hnllhiecdca20		;;
-    hnllhiecera11)		HOSTNAME=hnllhiecera10		;;
-    hnllhiecera21)		HOSTNAME=hnllhiecera20		;;
-    hnllhiecera31)		HOSTNAME=hnllhiecera30		;;
-    hnllhiecerb11)		HOSTNAME=hnllhiecerb10		;;
-    hnllhiecerb21)		HOSTNAME=hnllhiecerb20		;;
-    hnllhiecerb31)		HOSTNAME=hnllhiecerb30		;;
-    hnllhiecmsa11)		HOSTNAME=hnllhiecmsa10		;;
-    hnllhiecmsa21)		HOSTNAME=hnllhiecmsa20		;;
-    hnllhiecuta11)		HOSTNAME=hnllhiecuta10		;;
-    hnllhiecutb11)		HOSTNAME=hnllhiecutb10		;;
-    iclcarl21)			HOSTNAME=iclcarl20		;;	
-    iclambdv11)			HOSTNAME=iclambdv10		;;	
-    iclambdv21)			HOSTNAME=iclambdv20		;;	
-    iclambsq11)			HOSTNAME=iclambsq10		;;	
-    iclambsq21)			HOSTNAME=iclambsq20		;;	
-    incoag10)			HOSTNAME=incoag13		;;
-    incoag20)			HOSTNAME=incoag23		;;
-    incoew11)			HOSTNAME=incoew10		;;
-    incoew31)			HOSTNAME=incoew30		;;
-    incoesg1)			HOSTNAME=coesg1			;;
-    incoesg2)			HOSTNAME=coesg2			;;
-    incofmc3)			HOSTNAME=cofmcc3		;;
-    incofmc1)			HOSTNAME=cofmcc1		;;
-    incofmc2)			HOSTNAME=cofmcc2		;;
-    incoga10)			HOSTNAME=incoga13		;;
-    incoga20)			HOSTNAME=incoga23		;;
-    incolp11)			HOSTNAME=incolp10		;;
-    incolp21)			HOSTNAME=incolp20		;;
-    incolp31)			HOSTNAME=incolp30		;;
-    incors11)			HOSTNAME=incors10		;;
-    incors21)			HOSTNAME=incors20		;;
-    incors31)			HOSTNAME=incors30		;;
-    incotx11)                   HOSTNAME=incotx10               ;; 
-    incotx21)                   HOSTNAME=incotx20               ;; 
-    incous11)                   HOSTNAME=incous01               ;; 
-    incous12)                   HOSTNAME=incous02               ;; 
-    incovdb31)			HOSTNAME=incovdb3		;;
-    incovdb41)			HOSTNAME=incovdb4		;;
-    incovui11)			HOSTNAME=incovui1		;;
-    incovui21)			HOSTNAME=incovui2		;;
-    incovva11)			HOSTNAME=incovva1		;;
-    incovva21)			HOSTNAME=incovva2		;;
-    inflesg1)			HOSTNAME=flesg1			;;
-    inflesg2)			HOSTNAME=flesg2			;;
-    inflfmc1)			HOSTNAME=flfmcc1		;;
-    inflfmc2)			HOSTNAME=flfmcc2		;;
-    inflfmc3)			HOSTNAME=flfmcc3		;;
-    infllp11)			HOSTNAME=infllp10		;;
-    infllp21)			HOSTNAME=infllp20		;;
-    infltx11)                   HOSTNAME=infltx10               ;; 
-    infltx21)                   HOSTNAME=infltx20               ;; 
-    influs11)                   HOSTNAME=influs01               ;; 
-    influs12)                   HOSTNAME=influs02               ;; 
-    inilce21)			HOSTNAME=inilce20		;;
-    inilce31)			HOSTNAME=inilce30		;;
-    inilesg1)			HOSTNAME=ilesg1			;;
-    inilesg2)			HOSTNAME=ilesg2			;;
-    inilew11)			HOSTNAME=inilew10		;;
-    inilew21)			HOSTNAME=inilew20		;;
-    inilew31)			HOSTNAME=inilew30		;;
-    inilfmc1)			HOSTNAME=ilfmcc1		;;
-    inilfmc2)			HOSTNAME=ilfmcc2		;;
-    inilfmc3)			HOSTNAME=ilfmcc3		;;
-    inilfmc4)			HOSTNAME=ilfmcc4		;;
-    inilfmc5)			HOSTNAME=ilfmcc5		;;
-    inillpa21)			HOSTNAME=inillpa20		;;
-    inillpd21)			HOSTNAME=inillpd20		;;
-    inilus13)			HOSTNAME=inilus03		;;
-    inilus14)			HOSTNAME=inilus04		;;
-    inveri01)			HOSTNAME=inveri01-gig0		;;
-    lnmt0cuasifsip12)		HOSTNAME=lnmt0cuasifsip10	;;
-    lnmt0duwslfui11)		HOSTNAME=lnmt0duwslfui1		;;
-    lnmt0duwslfui21)		HOSTNAME=lnmt0duwslfui2		;;
-    lnmt0eudclfui11)		HOSTNAME=lnmt0eudclfui1		;;
-    lnmt0eudclfui21)		HOSTNAME=lnmt0eudclfui2		;;
-    lnmt0euomknode11)		HOSTNAME=lnmt0euomknode1	;;
-    lnmt0euomknode21)		HOSTNAME=lnmt0euomknode2	;;
-    lnmt0euomknode31)		HOSTNAME=lnmt0euomknode3	;;
-    lnmt0euomkube11)		HOSTNAME=lnmt0euomkube1 	;;
-    lnmt0euomkube21)		HOSTNAME=lnmt0euomkube2 	;;
-    lnmt0euomkube31)		HOSTNAME=lnmt0euomkube3 	;;
-    lnmt0euwsewdc11)		HOSTNAME=lnmt0euwsewdc1		;;
-    lnmt0euwsewhc11)		HOSTNAME=lnmt0euwsewhc1		;;
-    lnmt0euwsewhc21)		HOSTNAME=lnmt0euwsewhc2		;;
-    lnmt1duasneap11)		HOSTNAME=lnmt1duasneap10	;;
-    lnmt1duasneap21)		HOSTNAME=lnmt1duasneap20	;;
-    lnmt1duasneap31)		HOSTNAME=lnmt1duasneap30	;;
-    lnmt1duasneap41)		HOSTNAME=lnmt1duasneap40	;;
-    lnmt1duasnelb11)		HOSTNAME=lnmt1duasnelb10	;;
-    lnmt1duasnelb21)		HOSTNAME=lnmt1duasnelb20	;;
-    lnmt1duasnelb31)		HOSTNAME=lnmt1duasnelb30	;;
-    lnmt1duasnenx11)		HOSTNAME=lnmt1duasnenx10	;;
-    lnmt1duasnenx21)		HOSTNAME=lnmt1duasnenx20	;;
-    lnmt1duasnenx31)		HOSTNAME=lnmt1duasnenx30	;;
-    lnmt1duwslfui11)		HOSTNAME=lnmt1duwslfui1		;;
-    lnmt1duwslfui21)		HOSTNAME=lnmt1duwslfui2		;;
-    lnmt1euasa9crl11)		HOSTNAME=lnmt1euasa9crl1	;;
-    lnmt0euasml11)		HOSTNAME=lnmt0euasml10		;;
-    lnmt0euasml21)		HOSTNAME=lnmt0euasml20		;;
-    lnmt1euasneap131)		HOSTNAME=lnmt1euasneap130	;;
-    lnmt1euasneap141)		HOSTNAME=lnmt1euasneap140	;;
-    lnmt1euasneap51)		HOSTNAME=lnmt1euasneap50	;;
-    lnmt1euasneap61)		HOSTNAME=lnmt1euasneap60	;;
-    lnmt1euasneap71)		HOSTNAME=lnmt1euasneap70	;;
-    lnmt1euasneap81)		HOSTNAME=lnmt1euasneap80	;;
-    lnmt1euasnedc11)		HOSTNAME=lnmt1euasnedc10	;;
-    lnmt1euasneelb11)		HOSTNAME=lnmt1euasneelb10	;;
-    lnmt1euasneelb21)		HOSTNAME=lnmt1euasneelb20	;;
-    lnmt1euasneelb31)		HOSTNAME=lnmt1euasneelb30	;;
-    lnmt1euasneelb41)		HOSTNAME=lnmt1euasneelb40	;;
-    lnmt1euasnesa11)		HOSTNAME=lnmt1euasnesa10	;;
-    lnmt1euasnesl11)		HOSTNAME=lnmt1euasnesl10	;;
-    lnmt1euasnesl21)		HOSTNAME=lnmt1euasnesl20	;;
-    lnmt1euasnesl31)		HOSTNAME=lnmt1euasnesl30	;;
-    lnmt1eudbavad11)		HOSTNAME=lnmt1eudbavad10	;;
-    lnmt1eudbavad21)		HOSTNAME=lnmt1eudbavad20	;;
-    lnmt1euomknode101)		HOSTNAME=lnmt1euomknode100	;;
-    lnmt1euomknode111)		HOSTNAME=lnmt1euomknode110	;;
-    lnmt1euomknode121)		HOSTNAME=lnmt1euomknode120	;;
-    lnmt1euomknode71)		HOSTNAME=lnmt1euomknode70	;;
-    lnmt1euomknode81)		HOSTNAME=lnmt1euomknode80	;;
-    lnmt1euomknode91)		HOSTNAME=lnmt1euomknode90	;;
-    lnmt1euomkube41)		HOSTNAME=lnmt1euomkube40	;;
-    lnmt1euomkube51)		HOSTNAME=lnmt1euomkube50	;;
-    lnmt1euomkube61)		HOSTNAME=lnmt1euomkube60	;;
-    lnmt1duwspapa11)		HOSTNAME=lnmt1duwspapa10	;;
-    lnmt1duwspapa21)		HOSTNAME=lnmt1duwspapa20	;;
-    lnmt1cuomtool11)		HOSTNAME=lnmt1cuomtool10	;;
-    lnmt1euasrlapi11)		HOSTNAME=lnmt1euasrlapi1	;;
-    lnmt1euasrlapi21)		HOSTNAME=lnmt1euasrlapi2	;;
-    lnmt1eudbpaps11)		HOSTNAME=lnmt1eudbpaps10	;;
-    lnmt1eudbpaps21)		HOSTNAME=lnmt1eudbpaps20	;;
-    lnmt1eudclfui11)		HOSTNAME=lnmt1eudclfui1		;;
-    lnmt1eudclfui21)		HOSTNAME=lnmt1eudclfui2		;;
-    lnmt1eudcnedb11)		HOSTNAME=lnmt1eudcnedb10	;;
-    lnmt1eudcnedb21)		HOSTNAME=lnmt1eudcnedb20	;;
-    lnmt1eudcnedb31)		HOSTNAME=lnmt1eudcnedb30	;;
-    lnmt1euomknode11)		HOSTNAME=lnmt1euomknode1	;;
-    lnmt1euomknode21)		HOSTNAME=lnmt1euomknode2	;;
-    lnmt1euomknode31)		HOSTNAME=lnmt1euomknode3	;;
-    lnmt1euomknode41)		HOSTNAME=lnmt1euomknode4	;;
-    lnmt1euomknode51)		HOSTNAME=lnmt1euomknode5	;;
-    lnmt1euomknode61)		HOSTNAME=lnmt1euomknode6	;;
-    lnmt1euomkube11)		HOSTNAME=lnmt1euomkube1		;;
-    lnmt1euomkube21)		HOSTNAME=lnmt1euomkube2		;;
-    lnmt1euomkube31)		HOSTNAME=lnmt1euomkube3		;;
-    lnmt1euwsewdc11)		HOSTNAME=lnmt1euwsewdc1		;;
-    lnmt1euwsewhc11)		HOSTNAME=lnmt1euwsewhc1		;;
-    lnmt1euwsewhc21)		HOSTNAME=lnmt1euwsewhc2		;;
-    lnmt1euwsewhc31)		HOSTNAME=lnmt1euwsewhc3		;;
-    lnmtcocsdbb11)		HOSTNAME=lnmtcocsdbb10		;;
-    lnmtcocsdcb11)		HOSTNAME=lnmtcocsdcb10		;;
-    lnmtcocsdcb21)		HOSTNAME=lnmtcocsdcb20		;;
-    lnmtcocslg21)		HOSTNAME=lnmtcocslg20		;;
-    lnmtcocsmla15)		HOSTNAME=n1			;;
-    lnmtcocsuta11)		HOSTNAME=lnmtcocsuta10		;;
-    lnmtcocsutb11)		HOSTNAME=lnmtcocsutb10		;;
-    lnmtcodc9n11)		HOSTNAME=lnmtcodc9n10		;;
-    lnmtcodc9n21)		HOSTNAME=lnmtcodc9n20		;;
-    lnmtcodc9n31)		HOSTNAME=lnmtcodc9n30		;;
-    lnmtcodc9n41)		HOSTNAME=lnmtcodc9n40		;;
-    lnmtcodc9n51)		HOSTNAME=lnmtcodc9n50		;;
-    lnmtcodc9n61)		HOSTNAME=lnmtcodc9n60		;;
-    lnmtcodcad11)		HOSTNAME=lnmtcodcad10		;;
-    lnmtcodcad21)		HOSTNAME=lnmtcodcad20		;;
-    lnmtcodcag11)		HOSTNAME=lnmtcodcag10		;;
-    lnmtcodcag21)		HOSTNAME=lnmtcodcag20		;;
-    lnmtcodcala11)		HOSTNAME=lnmtcodcala10		;;
-    lnmtcodcala21)		HOSTNAME=lnmtcodcala20		;;
-    lnmtcodcama11)		HOSTNAME=lnmtcodcama10		;;
-    lnmtcodcama21)		HOSTNAME=lnmtcodcama20		;;
-    lnmtcodcamd11)		HOSTNAME=lnmtcodcamd10		;;
-    lnmtcodcamd21)		HOSTNAME=lnmtcodcamd20		;;
-    lnmtcodcbiw11)		HOSTNAME=lnmtcodcbiw10		;;
-    lnmtcodcbiw21)		HOSTNAME=lnmtcodcbiw20		;;
-    lnmtcodcbp11)		HOSTNAME=lnmtcodcbp10		;;
-    lnmtcodcbp21)		HOSTNAME=lnmtcodcbp20		;;
-    lnmtcodccba10)		HOSTNAME=lnmtcodccba01		;;
-    lnmtcodccba20)		HOSTNAME=lnmtcodccba02		;;
-    lnmtcodccba13)		HOSTNAME=lnmtcodccba03		;;
-    lnmtcodccba14)		HOSTNAME=lnmtcodccba04		;;
-    lnmtcodcce51)		HOSTNAME=lnmtcodcce50		;;
-    lnmtcodcce61)		HOSTNAME=lnmtcodcce60		;;
-    lnmtcodcce71)		HOSTNAME=lnmtcodcce70		;;
-    lnmtcodcce81)		HOSTNAME=lnmtcodcce80		;;
-    lnmtcodccl21)		HOSTNAME=lnmtcodccl20		;;
-    lnmtcodccm11)		HOSTNAME=lnmtcodccm10		;;
-    lnmtcodcdla11)		HOSTNAME=lnmtcodcdla1		;;
-    lnmtcodcdla21)		HOSTNAME=lnmtcodcdla2		;;
-    lnmtcodcdm11)		HOSTNAME=lnmtcodcdm10		;;
-    lnmtcodcdma11)		HOSTNAME=lnmtcodcdma10		;;
-    lnmtcodcdma21)		HOSTNAME=lnmtcodcdma20		;;
-    lnmtcodcdma31)		HOSTNAME=lnmtcodcdma30		;;
-    lnmtcodcdva11)		HOSTNAME=lnmtcodcdva1		;;
-    lnmtcodcdva21)		HOSTNAME=lnmtcodcdva2		;;
-    lnmtcodcdvb11)		HOSTNAME=lnmtcodcdvb1		;;
-    lnmtcodcdvb21)		HOSTNAME=lnmtcodcdvb2		;;
-    lnmtcodcdw11)		HOSTNAME=lnmtcodcdw10		;;
-    lnmtcodcdw21)		HOSTNAME=lnmtcodcdw20		;;
-    lnmtcodcdw31)		HOSTNAME=lnmtcodcdw30		;;
-    lnmtcodcgrt11)		HOSTNAME=lnmtcodcgrt10		;;
-    lnmtcodcgrt21)		HOSTNAME=lnmtcodcgrt20		;;
-    lnmtcodcgrt31)		HOSTNAME=lnmtcodcgrt30		;;
-    lnmtcodcgrt41)		HOSTNAME=lnmtcodcgrt40		;;
-    lnmtcodcgrt51)		HOSTNAME=lnmtcodcgrt50		;;
-    lnmtcodced11)		HOSTNAME=lnmtcodced10		;;
-    lnmtcodced21)		HOSTNAME=lnmtcodced20		;;
-    lnmtcodceg11)		HOSTNAME=lnmtcodceg10		;;
-    lnmtcodceg21)		HOSTNAME=lnmtcodceg20		;;
-    lnmtcodcem11)		HOSTNAME=lnmtcodcem10		;;
-    lnmtcodcem21)		HOSTNAME=lnmtcodcem20		;;
-    lnmtcodcem31)		HOSTNAME=lnmtcodcem30		;;
-    lnmtcodcer11)		HOSTNAME=lnmtcodcer10		;;
-    lnmtcodcer21)		HOSTNAME=lnmtcodcer20		;;
-    lnmtcodcerl11)		HOSTNAME=lnmtcodcerl10		;;
-    lnmtcodcerl21)		HOSTNAME=lnmtcodcerl20		;;
-    lnmtcodcetl11)		HOSTNAME=lnmtcodcetl10		;;
-    lnmtcodcetl21)		HOSTNAME=lnmtcodcetl20		;;
-    lnmtcodcew11)		HOSTNAME=lnmtcodcew10		;;
-    lnmtcodcew21)		HOSTNAME=lnmtcodcew20		;;
-    lnmtcodcew31)		HOSTNAME=lnmtcodcew30		;;
-    lnmtcodcew41)		HOSTNAME=lnmtcodcew40		;;
-    lnmtcodcew51)		HOSTNAME=lnmtcodcew50		;;
-    lnmtcodcew61)		HOSTNAME=lnmtcodcew60		;;
-    lnmtcodcew71)		HOSTNAME=lnmtcodcew70		;;
-    lnmtcodcew81)		HOSTNAME=lnmtcodcew80		;;
-    lnmtcodcew91)		HOSTNAME=lnmtcodcew90		;;
-    lnmtcodcga11)		HOSTNAME=lnmtcodcga10		;;
-    lnmtcodcga21)		HOSTNAME=lnmtcodcga20		;;
-    lnmtcodcida11)		HOSTNAME=lnmtcodcida1		;;
-    lnmtcodcidb11)		HOSTNAME=lnmtcodcidb1		;;
-    lnmtcodcima11)		HOSTNAME=lnmtcodcima10		;;
-    lnmtcodcimd11)		HOSTNAME=lnmtcodcimd10		;;
-    lnmtcodcimd21)		HOSTNAME=lnmtcodcimd20		;;
-    lnmtcodcimt11)		HOSTNAME=lnmtcodcimt10		;;
-    lnmtcodclvf11)		HOSTNAME=lnmtcodclvf10		;;
-    lnmtcodclvf21)		HOSTNAME=lnmtcodclvf20		;;
-    lnmtcodcmda11)		HOSTNAME=lnmtcodcmda1		;;
-    lnmtcodcmdb11)		HOSTNAME=lnmtcodcmdb1		;;
-    lnmtcodcmlc11)		HOSTNAME=lnmtcodcmlc10		;;
-    lnmtcodcmlc21)		HOSTNAME=lnmtcodcmlc20		;;
-    lnmtcodcnm11)		HOSTNAME=lnmtcodcnm10		;;
-    lnmtcodcod11)		HOSTNAME=lnmtcodcod10		;;
-    lnmtcodcod21)		HOSTNAME=lnmtcodcod20		;;
-    lnmtcodcom11)		HOSTNAME=lnmtcodcom10		;;
-    lnmtcodcom21)		HOSTNAME=lnmtcodcom20		;;
-    lnmtcodcpa11)		HOSTNAME=lnmtcodcpa10		;;
-    lnmtcodcpa21)		HOSTNAME=lnmtcodcpa20		;;
-    lnmtcodcpa31)		HOSTNAME=lnmtcodcpa30		;;
-    lnmtcodcpd11)		HOSTNAME=lnmtcodcpd10		;;
-    lnmtcodcpd21)		HOSTNAME=lnmtcodcpd20		;;
-    lnmtcodcps11)		HOSTNAME=lnmtcodcps10		;;
-    lnmtcodcps21)		HOSTNAME=lnmtcodcps20		;;
-    lnmtcodcsda11)		HOSTNAME=lnmtcodcsda10		;;
-    lnmtcodcsda21)		HOSTNAME=lnmtcodcsda20		;;
-    lnmtcodcsda31)		HOSTNAME=lnmtcodcsda30		;;
-    lnmtcodcssa11)		HOSTNAME=lnmtcodcssa10		;;
-    lnmtcodcssb11)		HOSTNAME=lnmtcodcssb10		;;
-    lnmtcodctac11)		HOSTNAME=lnmtcodctac10		;;
-    lnmtcodcvap11)		HOSTNAME=lnmtcodcvap10 		;;
-    lnmtcodcvap21)		HOSTNAME=lnmtcodcvap20 		;;
-    lnmtcodcvap31)		HOSTNAME=lnmtcodcvap30 		;;
-    lnmtcodcvap41)		HOSTNAME=lnmtcodcvap40 		;;
-    lnmtcodcvap51)		HOSTNAME=lnmtcodcvap50 		;;
-    lnmtcodcvdc11)		HOSTNAME=lnmtcodcvdc10 		;;
-    lnmtcodcvlb11)		HOSTNAME=lnmtcodcvlb10 		;;
-    lnmtcodcvlb21)		HOSTNAME=lnmtcodcvlb20 		;;
-    lnmtcodcvsa11)		HOSTNAME=lnmtcodcvsa10 		;;
-    lnmtcodcvsl11)		HOSTNAME=lnmtcodcvsl10 		;;
-    lnmtcodcvsl21)		HOSTNAME=lnmtcodcvsl20 		;;
-    lnmtcodcwd11)		HOSTNAME=lnmtcodcwd10		;;
-    lnmtcodcws11)		HOSTNAME=lnmtcodcws10		;;
-    lnmtcodcws21)		HOSTNAME=lnmtcodcws20		;;
-    lnmtcodzcba13)		HOSTNAME=lnmtcodzcba03		;;
-    lnmtcodzcba14)		HOSTNAME=lnmtcodzcba04		;;
-    lnmtcodzfr11)		HOSTNAME=lnmtcodzfr10		;;
-    lnmtcodzfr21)		HOSTNAME=lnmtcodzfr20		;;
-    lnmtcodzfs10)		HOSTNAME=lnmtcodzfs10.scc911.com	;;
-    lnmtcodznt11)		HOSTNAME=lnmtcodznt10		;;
-    lnmtcodznt21)		HOSTNAME=lnmtcodznt20		;;
-    lnmtcodznt31)		HOSTNAME=lnmtcodznt30		;;
-    lnmtcodznt41)		HOSTNAME=lnmtcodznt40		;;
-    lnmtcodznt51)		HOSTNAME=lnmtcodznt50		;;
-    lnmtcodznt61)		HOSTNAME=lnmtcodznt60		;;
-    lnmtcodzpc11)		HOSTNAME=lnmtcodzpc10		;;
-    lnmtcodzpc21)		HOSTNAME=lnmtcodzpc20		;;
-    lnmtcodztx11)		HOSTNAME=lnmtcodztx10		;;
-    lnmtcodztx21)		HOSTNAME=lnmtcodztx20		;;
-    lnmtcodzwe11)		HOSTNAME=lnmtcodzwe10		;;
-    lnmtcodzwe21)		HOSTNAME=lnmtcodzwe20		;;
-    lnmtcodzwv11)		HOSTNAME=lnmtcodzwv10		;;
-    lnmtcodzwv21)		HOSTNAME=lnmtcodzwv20		;;
-    lnmtcoil9n11)		HOSTNAME=lnmtcoil9n10		;;
-    lnmtcoil9n21)		HOSTNAME=lnmtcoil9n20		;;
-    lnmtcoil9n31)		HOSTNAME=lnmtcoil9n30		;;
-    lnmtcoil9n41)		HOSTNAME=lnmtcoil9n40		;;
-    lnmtcoilbiw11)		HOSTNAME=lnmtcoilbiw10		;;
-    lnmtcoilbiw21)		HOSTNAME=lnmtcoilbiw20		;;
-    lnmtcoilbp11)		HOSTNAME=lnmtcoilbp10		;;
-    lnmtcoilbp21)		HOSTNAME=lnmtcoilbp20		;;
-    lnmtcoilcba13)		HOSTNAME=lnmtcoilcba03		;;
-    lnmtcoilcba14)		HOSTNAME=lnmtcoilcba04		;;
-    lnmtcoilcl21)		HOSTNAME=lnmtcoilcl20		;;
-    lnmtcoildva11)		HOSTNAME=lnmtcoildva1		;;
-    lnmtcoildva21)		HOSTNAME=lnmtcoildva2		;;
-    lnmtcoildw11)		HOSTNAME=lnmtcoildw10		;;
-    lnmtcoildw21)		HOSTNAME=lnmtcoildw20		;;
-    lnmtcoildw31)		HOSTNAME=lnmtcoildw30		;;
-    lnmtcoiled11)		HOSTNAME=lnmtcoiled10		;;
-    lnmtcoiled21)		HOSTNAME=lnmtcoiled20		;;
-    lnmtcoiler11)		HOSTNAME=lnmtcoiler10		;;
-    lnmtcoilerl11)		HOSTNAME=lnmtcoilerl10		;;
-    lnmtcoilerl21)		HOSTNAME=lnmtcoilerl20		;;
-    lnmtcoiletl11)		HOSTNAME=lnmtcoiletl10		;;
-    lnmtcoiletl21)		HOSTNAME=lnmtcoiletl20		;;
-    lnmtcoilgrt11)		HOSTNAME=lnmtcoilgrt10		;;
-    lnmtcoilgrt21)		HOSTNAME=lnmtcoilgrt20		;;
-    lnmtcoilida11)		HOSTNAME=lnmtcoilida1		;;
-    lnmtcoilidb11)		HOSTNAME=lnmtcoilidb1		;;
-    lnmtcoilima11)		HOSTNAME=lnmtcoilima10		;;
-    lnmtcoilimd11)		HOSTNAME=lnmtcoilimd10		;;
-    lnmtcoilimd21)		HOSTNAME=lnmtcoilimd20		;;
-    lnmtcoilimt11)		HOSTNAME=lnmtcoilimt10		;;
-    lnmtcoilimt21)		HOSTNAME=lnmtcoilimt20		;;
-    lnmtcoillvf11)		HOSTNAME=lnmtcoillvf10		;;
-    lnmtcoillvf21)		HOSTNAME=lnmtcoillvf20		;;
-    lnmtcoilnm11)		HOSTNAME=lnmtcoilnm10		;;
-    lnmtcoilmda11)		HOSTNAME=lnmtcoilmda1		;;
-    lnmtcoilmdb11)		HOSTNAME=lnmtcoilmdb1		;;
-    lnmtcoilmlc11)		HOSTNAME=lnmtcoilmlc10		;;
-    lnmtcoilmlc21)		HOSTNAME=lnmtcoilmlc20		;;
-    lnmtcoilmlc31)		HOSTNAME=lnmtcoilmlc30		;;
-    lnmtcoilmlc41)		HOSTNAME=lnmtcoilmlc40		;;
-    lnmtcoilod11)		HOSTNAME=lnmtcoilod10		;;
-    lnmtcoilom11)		HOSTNAME=lnmtcoilom10		;;
-    lnmtcoilpc11)		HOSTNAME=lnmtcoilpc10		;;
-    lnmtcoilpc21)		HOSTNAME=lnmtcoilpc20		;;
-    lnmtcoilsda11)		HOSTNAME=lnmtcoilsda10		;;
-    lnmtcoilssa11)		HOSTNAME=lnmtcoilssa10		;;
-    lnmtcoilssb11)		HOSTNAME=lnmtcoilssb10		;;
-    lnmtcoiltac11)		HOSTNAME=lnmtcoiltac10		;;
-    lnmtcoilti11)		HOSTNAME=lnmtcoilti10		;;
-    lnmtcoilti21)		HOSTNAME=lnmtcoilti20		;;
-    lnmtcoilti31)		HOSTNAME=lnmtcoilti30		;;
-    lnmtcoilti41)		HOSTNAME=lnmtcoilti40		;;
-    lnmtcoiltx11)		HOSTNAME=lnmtcoiltx10		;;
-    lnmtcoiltx21)		HOSTNAME=lnmtcoiltx20		;;
-    lnmtcoilvap11)		HOSTNAME=lnmtcoilvap10		;;
-    lnmtcoilvap21)		HOSTNAME=lnmtcoilvap20		;;
-    lnmtcoilvap31)		HOSTNAME=lnmtcoilvap30		;;
-    lnmtcoilvap41)		HOSTNAME=lnmtcoilvap40		;;
-    lnmtcoilvap51)		HOSTNAME=lnmtcoilvap50		;;
-    lnmtcoilvdc11)		HOSTNAME=lnmtcoilvdc10		;;
-    lnmtcoilvlb11)		HOSTNAME=lnmtcoilvlb10		;;
-    lnmtcoilvlb21)		HOSTNAME=lnmtcoilvlb20		;;
-    lnmtcoilwd11)		HOSTNAME=lnmtcoilwd10		;;
-    lnmtcoilwe11)		HOSTNAME=lnmtcoilwe10		;;
-    lnmtcoilwv11)		HOSTNAME=lnmtcoilwv10		;;
-    lnmtcoilwv21)		HOSTNAME=lnmtcoilwv20		;;
-    mapflex)			HOSTNAME=mapflex1		;;
-    miamflcsmla15)		HOSTNAME=n1			;;
-    miamfldc9n11)		HOSTNAME=miamfldc9n10		;;
-    miamfldc9n21)		HOSTNAME=miamfldc9n20		;;
-    miamfldccba10)		HOSTNAME=miamfldccba01		;;
-    miamfldccba20)		HOSTNAME=miamfldccba02		;;
-    miamfldcem11)		HOSTNAME=miamfldcem10		;;
-    miamfldcew11)		HOSTNAME=miamfldcew10		;;
-    miamfldcew21)		HOSTNAME=miamfldcew20		;;
-    miamfldcew41)		HOSTNAME=miamfldcew40		;;
-    miamfldcew51)		HOSTNAME=miamfldcew50		;;
-    miamfldcgrt11)		HOSTNAME=miamfldcgrt10		;;
-    miamfldcgrt21)		HOSTNAME=miamfldcgrt20		;;
-    miamfldcmlc11)		HOSTNAME=miamfldcmlc10		;;
-    miamfldcmlc21)		HOSTNAME=miamfldcmlc20		;;
-    miamfldcnm11)		HOSTNAME=miamfldcnm10		;;
-    miamfldcod11)		HOSTNAME=miamfldcod10		;;
-    miamfldcom11)		HOSTNAME=miamfldcom10		;;
-    miamfldcpd11)		HOSTNAME=miamfldcpd10		;;
-    miamfldcpd21)		HOSTNAME=miamfldcpd20		;;
-    miamfldcsda11)		HOSTNAME=miamfldcsda10		;;
-    miamfldcsda21)		HOSTNAME=miamfldcsda20		;;
-    miamfldcsda31)		HOSTNAME=miamfldcsda30		;;
-    miamfldctxb1)		HOSTNAME=miamfldctxb0		;;
-    miamfldcvap11)		HOSTNAME=miamfldcvap10		;;
-    miamfldcvap21)		HOSTNAME=miamfldcvap20		;;
-    miamfldcvap31)		HOSTNAME=miamfldcvap30		;;
-    miamfldcvap41)		HOSTNAME=miamfldcvap40		;;
-    miamfldcvap51)		HOSTNAME=miamfldcvap50		;;
-    miamfldcvdc11)		HOSTNAME=miamfldcvdc10		;;
-    miamfldcvlb11)		HOSTNAME=miamfldcvlb10		;;
-    miamfldcvlb21)		HOSTNAME=miamfldcvlb20		;;
-    miamfldcvsa11)		HOSTNAME=miamfldcvsa10		;;
-    miamfldcvsl11)		HOSTNAME=miamfldcvsl10		;;
-    miamfldcvsl21)		HOSTNAME=miamfldcvsl20		;;
-    nonacocsdba11)		HOSTNAME=nonacocsdba10		;;
-    nonacocsdca11)		HOSTNAME=nonacocsdca10		;;
-    nonacocslga11)		HOSTNAME=nonacocslga10		;;
-    nonacocsuta11)		HOSTNAME=nonacocsuta10		;;
-    nonacocsutb11)		HOSTNAME=nonacocsutb10		;;
-    pscafmc1)			HOSTNAME=cafmcc1		;;
-    pscafmc2)			HOSTNAME=cafmcc2		;;
-    pstofmc1)			HOSTNAME=tofmcc1		;;
-    pstofmc2)			HOSTNAME=tofmcc2		;;
-    scmweb)			HOSTNAME=lnmtcodcsw10		;;
-    tatoarqadw11)		HOSTNAME=tatoarqadw10		;;
-    tatoarqadw21)		HOSTNAME=tatoarqadw20		;;
-    tatoarqadw31)		HOSTNAME=tatoarqadw30		;;
-    wdstnycsdca11)		HOSTNAME=wdstnycsdca10		;;
-    wdstnycslga11)		HOSTNAME=wdstnycslga10		;;
-    wdstnyecada11)		HOSTNAME=wdstnyecada10		;;
-    wdstnyecadb11)		HOSTNAME=wdstnyecadb10		;;
-    wdstnyecdca11)		HOSTNAME=wdstnyecdca10		;;
-    wdstnyecdca21)		HOSTNAME=wdstnyecdca20		;;
-    wdstnyecera11)		HOSTNAME=wdstnyecera10		;;
-    wdstnyecera21)		HOSTNAME=wdstnyecera20		;;
-    wdstnyecera31)		HOSTNAME=wdstnyecera30		;;
-    wdstnyecerb11)		HOSTNAME=wdstnyecerb10		;;
-    wdstnyecerb21)		HOSTNAME=wdstnyecerb20		;;
-    wdstnyecerb31)		HOSTNAME=wdstnyecerb30		;;
-    wdstnyecuta11)		HOSTNAME=wdstnyecuta10		;;
-    wdstnyecutb11)		HOSTNAME=wdstnyecutb10		;;
-    wkkihidcftp11)		HOSTNAME=wkkihidcftp10		;;
-    wkkihiecada11)		HOSTNAME=wkkihiecada10		;;
-    wkkihiecadb11)		HOSTNAME=wkkihiecadb10		;;
-    wkkihiecdca11)		HOSTNAME=wkkihiecdca10		;;
-    wkkihiecdca21)		HOSTNAME=wkkihiecdca20		;;
-    wkkihiecera11)		HOSTNAME=wkkihiecera10		;;
-    wkkihiecera21)		HOSTNAME=wkkihiecera20		;;
-    wkkihiecera31)		HOSTNAME=wkkihiecera30		;;
-    wkkihiecerb11)		HOSTNAME=wkkihiecerb10		;;
-    wkkihiecerb21)		HOSTNAME=wkkihiecerb20		;;
-    wkkihiecerb31)		HOSTNAME=wkkihiecerb30		;;
-    wkkihiecmsa11)		HOSTNAME=wkkihiecmsa10		;;
-    wkkihiecmsa21)		HOSTNAME=wkkihiecmsa20		;;
-    lnmt1euwsavaa11)		HOSTNAME=lnmt1euwsavaa10	;;
-    lnmt1euwsavaa21)		HOSTNAME=lnmt1euwsavaa20	;;
-    lnmtcodcimt21)		HOSTNAME=lnmtcodcimt20		;;
-    lnmtcoilvsa11)		HOSTNAME=lnmtcoilvsa10		;;
-    lnmtcoilvsl11)		HOSTNAME=lnmtcoilvsl10		;;
-    lnmtcoilvsl21)		HOSTNAME=lnmtcoilvsl20		;;
-    miam1cuomtool11)		HOSTNAME=miam1cuomtool10	;;
-    miam1duasneap11)		HOSTNAME=miam1duasneap10	;;
-    miam1duasneap21)		HOSTNAME=miam1duasneap20	;;
-    miam1duasneap31)		HOSTNAME=miam1duasneap30	;;
-    miam1duasneap41)		HOSTNAME=miam1duasneap40	;;
-    miam1duasnelb11)		HOSTNAME=miam1duasnelb10	;;
-    miam1duasnelb21)		HOSTNAME=miam1duasnelb20	;;
-    miam1duasnelb31)		HOSTNAME=miam1duasnelb30	;;
-    miam1duasnenx11)		HOSTNAME=miam1duasnenx10	;;
-    miam1duasnenx21)		HOSTNAME=miam1duasnenx20	;;
-    miam1duasnenx31)		HOSTNAME=miam1duasnenx30	;;
-    miam1euasneap131)		HOSTNAME=miam1euasneap130	;;
-    miam1euasneap141)		HOSTNAME=miam1euasneap140	;;
-    miam1euasneap51)		HOSTNAME=miam1euasneap50	;;
-    miam1euasneap61)		HOSTNAME=miam1euasneap60	;;
-    miam1euasneap71)		HOSTNAME=miam1euasneap70	;;
-    miam1euasneap81)		HOSTNAME=miam1euasneap80	;;
-    miam1euasnedc11)		HOSTNAME=miam1euasnedc10	;;
-    miam1euasneelb11)		HOSTNAME=miam1euasneelb10	;;
-    miam1euasneelb21)		HOSTNAME=miam1euasneelb20	;;
-    miam1euasneelb31)		HOSTNAME=miam1euasneelb30	;;
-    miam1euasneelb41)		HOSTNAME=miam1euasneelb40	;;
-    miam1euasnesa11)		HOSTNAME=miam1euasnesa10	;;
-    miam1euasnesl11)		HOSTNAME=miam1euasnesl10	;;
-    miam1euasnesl21)		HOSTNAME=miam1euasnesl20	;;
-    miam1euasnesl31)		HOSTNAME=miam1euasnesl30	;;
-    miam1eudcnedb11)		HOSTNAME=miam1eudcnedb10	;;
-    miam1eudcnedb21)		HOSTNAME=miam1eudcnedb20	;;
-    miam1eudcnedb31)		HOSTNAME=miam1eudcnedb30	;;
-    miam1euomknode11)		HOSTNAME=miam1euomknode10	;;
-    miam1euomknode21)		HOSTNAME=miam1euomknode20	;;
-    miam1euomknode31)		HOSTNAME=miam1euomknode30	;;
-    miam1euomkube11)		HOSTNAME=miam1euomkube10	;;
-    miam1euomkube21)		HOSTNAME=miam1euomkube20	;;
-    miam1euomkube31)		HOSTNAME=miam1euomkube30	;;
-    tato0duasneap11)		HOSTNAME=tato0duasneap10	;;
-    tato0duasneap21)		HOSTNAME=tato0duasneap20	;;
-    tato0duasneap31)		HOSTNAME=tato0duasneap30	;;
-    tato0duasneap41)		HOSTNAME=tato0duasneap40	;;
-    tato0duasnelb11)		HOSTNAME=tato0duasnelb10	;;
-    tato0duasnelb21)		HOSTNAME=tato0duasnelb20	;;
-    tato0duasnelb31)		HOSTNAME=tato0duasnelb30	;;
-    tato0duasnenx11)		HOSTNAME=tato0duasnenx10	;;
-    tato0duasnenx21)		HOSTNAME=tato0duasnenx20	;;
-    tato0duasnenx31)		HOSTNAME=tato0duasnenx30	;;
-    tato0euasneap131)		HOSTNAME=tato0euasneap130	;;
-    tato0euasneap141)		HOSTNAME=tato0euasneap140	;;
-    tato0euasneap51)		HOSTNAME=tato0euasneap50	;;
-    tato0euasneap61)		HOSTNAME=tato0euasneap60	;;
-    tato0euasneap71)		HOSTNAME=tato0euasneap70	;;
-    tato0euasneap81)		HOSTNAME=tato0euasneap80	;;
-    tato0euasnedc11)		HOSTNAME=tato0euasnedc10	;;
-    tato0euasneelb11)		HOSTNAME=tato0euasneelb10	;;
-    tato0euasneelb21)		HOSTNAME=tato0euasneelb20	;;
-    tato0euasneelb31)		HOSTNAME=tato0euasneelb30	;;
-    tato0euasneelb41)		HOSTNAME=tato0euasneelb40	;;
-    tato0euasnesa11)		HOSTNAME=tato0euasnesa10	;;
-    tato0euasnesl11)		HOSTNAME=tato0euasnesl10	;;
-    tato0euasnesl21)		HOSTNAME=tato0euasnesl20	;;
-    tato0euasnesl31)		HOSTNAME=tato0euasnesl30	;;
-    tato0euasptag11)		HOSTNAME=tato0euasptag10	;;
-    tato0eudcnedb11)		HOSTNAME=tato0eudcnedb10	;;
-    tato0eudcnedb21)		HOSTNAME=tato0eudcnedb20	;;
-    tato0euomknode11)		HOSTNAME=tato0euomknode10	;;
-    tato0euomknode21)		HOSTNAME=tato0euomknode20	;;
-    tato0euomknode31)		HOSTNAME=tato0euomknode30	;;
-    tato0euomknode41)		HOSTNAME=tato0euomknode40	;;
-    tato0euomknode51)		HOSTNAME=tato0euomknode50	;;
-    tato0euomknode61)		HOSTNAME=tato0euomknode60	;;
-    tato0euomknode71)		HOSTNAME=tato0euomknode70	;;
-    tato0euomkube11)		HOSTNAME=tato0euomkube10	;;
-    tato0euomkube21)		HOSTNAME=tato0euomkube20	;;
-    tato0euomkube31)		HOSTNAME=tato0euomkube30	;;
-    *)                          HOSTNAME=$SERVER ;;
-  esac
+  HOSTNAME=$(grep "^${SERVER}:" ${ADMIN_DATA}/cfg2html.translations)
+
+# if it's not in the file, it's assumed to be a single interface system and SERVER == HOSTNAME.
+  if [[ -z ${HOSTNAME} ]]
+  then
+    HOSTNAME=${SERVER}
+  fi
 
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  if [[ ! -d $SVRPATH ]]
+  if [[ ! -d ${SVRPATH} ]]
   then
-    mkdir -p $SVRPATH
-    chmod 775 $SVRPATH
+    mkdir -p ${SVRPATH}
+    chmod 775 ${SVRPATH}
   fi
 
-  echo $SERVER
+  echo ${SERVER}
 
 # Content here: scp the config file from here
 
-  if [[ ! -f $DDIR/$SERVER.html ]] || [[ "$FORCE" = "yes" ]] && [[ "$REBUILD" = "no" ]]
+  if [[ ! -f ${DDIR}/${SERVER}.html ]] || [[ "${FORCE}" = "yes" ]] && [[ "${REBUILD}" = "no" ]]
   then
-    /usr/bin/scp $SERVER:/opt/intrado/cfghtml/$HOSTNAME.html $DDIR/$SERVER.html &
+    /usr/bin/scp ${SERVER}:${SCRIPTS}/cfghtml/${HOSTNAME}.html ${DDIR}/${SERVER}.html &
     PID=$!
 
 # wait for the specified number of seconds for scp to complete
@@ -702,12 +147,12 @@ do
 
 # .2 seems to pause enough for the scp command to finish without taking a full second for each system.
     /usr/bin/perl -e 'select(undef,undef,undef,.2)'
-    /usr/bin/ps -p $PID > /dev/null 2>&1
+    /usr/bin/ps -p ${PID} > /dev/null 2>&1
     if [[ $? -eq 0 ]]
     then
-      while [[ $TIMEOUT -gt 0 ]]
+      while [[ ${TIMEOUT} -gt 0 ]]
       do
-        /usr/bin/ps -p $PID > /dev/null 2>&1
+        /usr/bin/ps -p ${PID} > /dev/null 2>&1
         if [[ $? -ne 0 ]]
         then
           break
@@ -718,42 +163,42 @@ do
 
 # if the timeout reaches 0, then the process was killed. Report something.
 
-      if [[ $TIMEOUT -le 0 ]]
+      if [[ ${TIMEOUT} -le 0 ]]
       then
-        echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/config.status
-        echo "ERROR: Unable to connect to server ($PROGNAME)" >> $SVRPATH/morning.status
-        chmod 664 $SVRPATH/config.status
-        chmod 664 $SVRPATH/morning.status
-        kill -KILL $PID
+        echo "ERROR: Unable to connect to server (${PROGNAME})" >> ${SVRPATH}/config.status
+        echo "ERROR: Unable to connect to server (${PROGNAME})" >> ${SVRPATH}/morning.status
+        chmod 664 ${SVRPATH}/config.status
+        chmod 664 ${SVRPATH}/morning.status
+        kill -KILL ${PID}
       fi
     fi
   fi
 
 # now parse out the date line for the index.html file
 
-  if [[ ! "$HTML" == "" ]]
+  if [[ ! "${HTML}" == "" ]]
   then
-    if [[ -f $DDIR/$SERVER.html ]]
+    if [[ -f ${DDIR}/${SERVER}.html ]]
     then
-      if [[ $OS = "Linux" ]]
+      if [[ ${OS} = "Linux" ]]
       then
-        CREATED=`egrep "Created (2017|2018|2019|2020|2021|2022|2023|2024)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
-        DATE=`echo $CREATED | cut -f2 -d\ `
+        CREATED=$(egrep "Created (2017|2018|2019|2020|2021|2022|2023|2024)" ${DDIR}/${SERVER}.html | head -1 | sed 's/<[^>]*>//g')
+        DATE=$(echo ${CREATED} | cut -f2 -d\ )
       fi
-      if [[ $OS = "SunOS" ]]
+      if [[ ${OS} = "SunOS" ]]
       then
-        CREATED=`egrep "Created (2017|2018|2019|2020|2021|2022|2023|2024)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
-        DATE=`echo $CREATED | cut -f2 -d\ `
+        CREATED=$(egrep "Created (2017|2018|2019|2020|2021|2022|2023|2024)" ${DDIR}/${SERVER}.html | head -1 | sed 's/<[^>]*>//g')
+        DATE=$(echo ${CREATED} | cut -f2 -d\ )
       fi
-      if [[ $OS = "FreeBSD" ]]
+      if [[ ${OS} = "FreeBSD" ]]
       then
-        CREATED=`grep "Date & Time" $DDIR/$SERVER.html`
-        DATE=`echo $CREATED | awk '{print $5" "$6" "$9}'`
+        CREATED=$(grep "Date & Time" ${DDIR}/${SERVER}.html)
+        DATE=$(echo ${CREATED} | awk '{print $5" "$6" "$9}')
 
-        MON=`echo $DATE | cut -f1 -d\ `
-        YEAR=`echo $DATE | cut -f3 -d\ `
+        MON=$(echo ${DATE} | cut -f1 -d\ )
+        YEAR=$(echo ${DATE} | cut -f3 -d\ )
 
-        case $MON in 
+        case ${MON} in 
           Jan) MON=01 ;;
           Feb) MON=02 ;;
           Mar) MON=03 ;;
@@ -768,72 +213,46 @@ do
           Dec) MON=12 ;;
         esac
 
-        DATE="$YEAR-$MON"
+        DATE="${YEAR}-${MON}"
 
       fi
-      if [[ $OS = "OSF1" ]]
+      if [[ ${OS} = "HP-UX" ]]
       then
-        CREATED=`grep "^Run on" $DDIR/$SERVER.html`
-        DATE=`echo $CREATED | awk '{print $4" "$5" "$8}'`
-
-        MON=`echo $DATE | cut -f1 -d\ `
-        YEAR=`echo $DATE | cut -f3 -d\ `
-
-        case $MON in 
-          Jan) MON=01 ;;
-          Feb) MON=02 ;;
-          Mar) MON=03 ;;
-          Apr) MON=04 ;;
-          May) MON=05 ;;
-          Jun) MON=06 ;;
-          Jul) MON=07 ;;
-          Aug) MON=08 ;;
-          Sep) MON=09 ;;
-          Oct) MON=10 ;;
-          Nov) MON=11 ;;
-          Dec) MON=12 ;;
-        esac
-
-        DATE="$YEAR-$MON"
-
-      fi
-      if [[ $OS = "HP-UX" ]]
-      then
-        CREATED=`egrep "Created (2017|2018|2019|2020|2021|2022|2023)" $DDIR/$SERVER.html | head -1 | sed 's/<[^>]*>//g'`
-        DATE=`echo $CREATED | head -1 | awk '{print $2}'`
+        CREATED=$(egrep "Created (2017|2018|2019|2020|2021|2022|2023)" ${DDIR}/${SERVER}.html | head -1 | sed 's/<[^>]*>//g')
+        DATE=$(echo ${CREATED} | head -1 | awk '{print $2}')
       fi
     fi
 
 # break apart the captured date to get the year and month for comparison to the current month and date.
-    YEAR=`echo $DATE | cut -f1 -d\-`
-    MON=`echo $DATE | cut -f2 -d\-`
+    YEAR=$(echo ${DATE} | cut -f1 -d\-)
+    MON=$(echo ${DATE} | cut -f2 -d\-)
 
-    DATE="$YEAR-$MON"
-    DDATE="$YEAR$MON"
+    DATE="${YEAR}-${MON}"
+    DDATE="${YEAR}${MON}"
 
 # finally add the line to the index.html file
 
-    if [[ -f $DDIR/$SERVER.html ]]
+    if [[ -f ${DDIR}/${SERVER}.html ]]
     then
-      if [[ $DATE = $CHKDATE ]]
+      if [[ ${DATE} = ${CHKDATE} ]]
       then
-        echo "  <li><a href=\"/cfg2html/$DDATE/$SERVER.html\">$SERVER</a> - $CREATED</li>" >> $HTML
+        echo "  <li><a href=\"/cfg2html/${DDATE}/${SERVER}.html\">${SERVER}</a> - ${CREATED}</li>" >> "$HTML"
       else
-        echo "  <li><font color=red><a href=\"/cfg2html/$DDATE/$SERVER.html\">$SERVER</a> - $CREATED</font></li>" >> $HTML
+        echo "  <li><font color=red><a href=\"/cfg2html/${DDATE}/${SERVER}.html\">${SERVER}</a> - ${CREATED}</font></li>" >> "$HTML"
       fi
-      chmod 664 $DDIR/$SERVER.html
+      chmod 664 ${DDIR}/${SERVER}.html
     else
-      echo "  <li><font color=red>$SERVER - Config file not found</font></li>" >> $HTML
+      echo "  <li><font color=red>${SERVER} - Config file not found</font></li>" >> "$HTML"
     fi
   fi
 done
 
-if [[ ! "$HTML" == "" ]]
+if [[ ! "${HTML}" == "" ]]
 then
-  echo "</ul>" >> $HTML
-  echo "" >> $HTML
-  echo "</body>" >> $HTML
-  echo "</html>" >> $HTML
+  echo "</ul>" >> "${HTML}"
+  echo "" >> "${HTML}"
+  echo "</body>" >> "${HTML}"
+  echo "</html>" >> "${HTML}"
 fi
 
 exit 0

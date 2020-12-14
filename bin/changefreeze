@@ -4,33 +4,45 @@
 # disable/enable change freeze
 # 
 
-ADMIN=/usr/local/admin
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="changefreeze"
 
 if [[ -z $1 ]]
 then
   echo "Usage:"
   echo "  changefreeze [on | enable | off | disable ]"
   echo "Where:"
-  echo " - on/enable   - Creates the /opt/intrado/etc/changefreeze file"
-  echo " - off/disable - Deletes the /opt/intrado/etc/changefreeze file"
+  echo " - on/enable   - Creates the $SCRIPTS_DATA/changefreeze file"
+  echo " - off/disable - Deletes the $SCRIPTS_DATA/changefreeze file"
   echo ""
   exit 1
 fi
 
 if [[ $1 = 'on' ]] || [[ $1 = 'enable' ]]
 then
-  for i in $(grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:)
+  for i in $(grep -v "^#" $ADMIN_DATA/servers | cut -f1 -d:)
   do
 # just copy any file out
-    scp $ADMIN/bin/changefreeze "${i}":/opt/intrado/etc/
+    scp $ADMIN/bin/changefreeze "${i}":$SCRIPTS_DATA/
   done
 fi
 
 if [[ $1 = 'off' ]] || [[ $1 = 'disable' ]]
 then
-  for i in $(grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:)
+  for i in $(grep -v "^#" $ADMIN_DATA/servers | cut -f1 -d:)
   do
-    ssh "${i}" "rm /opt/intrado/etc/changefreeze"
+    ssh "${i}" "rm $SCRIPTS_DATA/changefreeze"
   done
 fi
 

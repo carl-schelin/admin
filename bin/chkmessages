@@ -4,7 +4,7 @@
 # Two reports are created which are e-mailed to admins for review.
 #
 # 2005/05/12 v1.0 - Carl Schelin
-# 2007/12/06 v1.0 - TCS - Update for Intrado
+# 2007/12/06 v1.0 - TCS - Update for new company
 # 2011/10/17 v1.1 - tcs - add timezone to server name so log time can be accurately determined
 
 $home="/usr/local/admin";

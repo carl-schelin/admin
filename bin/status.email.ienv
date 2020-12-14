@@ -15,7 +15,7 @@ fi
 . "${DIRNAME}"/../.config
 
 WHOCARES="ien.voice.apps.sys.admins@west.com"
-LOG="${SCRIPTS}/output/status.ienv"
+LOG="${ADMIN}/output/status.ienv"
 SEND="0"
 TODAY=`date +"%w"`
 
@@ -24,10 +24,10 @@ then
   rm $LOG
 fi
 
-for i in `grep -v "^#" ${SCRIPTS_ETC}/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ -f $SVRPATH/config.ienv.status ]
   then
