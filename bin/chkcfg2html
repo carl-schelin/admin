@@ -24,6 +24,7 @@ then
 fi
 
 PROGNAME="chkcfg2html"
+
 DATE=`date +"%Y%m"`
 CFG="${HTTPD}/cfg2html"
 DDIR="$CFG/$DATE"
