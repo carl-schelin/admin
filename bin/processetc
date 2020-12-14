@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-# processetc - Process the various output files placed in each server's /opt/intrado/etc directory
+# processetc - Process the various output files placed in each server's Script data directory
 # Owner: Carl Schelin
 
 BASENAME=$(basename "$0")
@@ -15,14 +15,13 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-PROGNAME="processetc"
-
 if [[ ! $RUNBY -eq 5000 ]]
 then
   echo "This script must be run by the Unix Service account."
   exit 0
 fi
 
+PROGNAME="processetc"
 
 # Standard function to take two files, compare them, and report the status
 
