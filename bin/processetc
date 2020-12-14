@@ -54,7 +54,7 @@ compare_Content() {
 
 # Now run through the server list and process the files
 
-for i in `/usr/bin/grep -v "^#" ${SCRIPTS_ETC}/servers`
+for i in `/usr/bin/grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -63,7 +63,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="${SCRIPTS}/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -72,10 +72,10 @@ do
   fi
 
 # Set up the temporary location for output files
-  TMPPATH="${SCRIPTS}/tmp/etc"
+  TMPPATH="${ADMIN}/tmp/etc"
 
 # Be in the right directory
-  cd ${SCRIPTS}/tmp
+  cd ${ADMIN}/tmp
 
 # Remove the tmp/etc directory
   if [[ -d $TMPPATH ]]
