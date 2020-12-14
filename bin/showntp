@@ -1,8 +1,27 @@
 #!/bin/ksh
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="showntp"
+
 DATE=`date`
-LOC=/usr/local/admin
-PHP=/usr/local/httpd/htsecure/reports/ntp.php
+PHP="${REPORTS}/ntp.php"
 
 echo "<?php" > $PHP
 echo "  include('../login/check.php');" >> $PHP
@@ -16,13 +35,13 @@ echo "<body>" >> $PHP
 echo "<h3 align=center>NTP Settings</h3>" >> $PHP
 echo "<h4 align=center>$DATE</h4>" >> $PHP
 
-for i in `grep -v "^#" $LOC/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:`
 do
   echo "<p><b>$i</b>" >> $PHP
-  if [[ -f $LOC/servers/$i/ntpq.output ]]
+  if [[ -f ${ADMIN}/servers/$i/ntpq.output ]]
   then
     echo "<pre>" >> $PHP
-    cat $LOC/servers/$i/ntpq.output >> $PHP
+    cat ${ADMIN}/servers/$i/ntpq.output >> $PHP
     echo "</pre></p>" >> $PHP
   fi
 done
