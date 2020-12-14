@@ -1,13 +1,31 @@
 #!/bin/ksh
 
-ADMIN=/usr/local/admin
-HTML=/usr/local/httpd/htsecure/reports/bash.php
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="showbash"
+
+HTML="${REPORTS}/bash.php"
 
 echo "<?php
 # Script: bash.php
 # Owner: Carl Schelin
 # Coding Standard 3.0 Applied
-# See: https://incowk01/makers/index.php/Coding_Standards
 # Description:
 
   include('settings.php');
@@ -32,8 +50,6 @@ echo "<?php
 <script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>
 <link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">
 <script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>
-<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.js\"></script>
-<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.css\">
 
 </head>
 <body class=\"ui-widget-content\">
@@ -81,17 +97,17 @@ echo "<?php
   <th class=\"ui-state-default\">CVE-2014-7187</th>
 </tr>" > $HTML
 
-for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:`
 do
 
-  if [[ -f $ADMIN/servers/$i/bash.vulnerable ]]
+  if [[ -f ${ADMIN}/servers/$i/bash.vulnerable ]]
   then
     echo "<tr>" >> $HTML
     echo "  <td class=\"ui-widget-content\">$i</td>" >> $HTML
-    echo "  <td class=\"ui-widget-content\">`head -1 $ADMIN/servers/$i/bash.vulnerable`</td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\">`head -1 ${ADMIN}/servers/$i/bash.vulnerable`</td>" >> $HTML
 
     CLASS="ui-widget-content"
-    OUTPUT=`grep Output: $ADMIN/servers/$i/bash.vulnerable | tail -4 | head -1`
+    OUTPUT=`grep Output: ${ADMIN}/servers/$i/bash.vulnerable | tail -4 | head -1`
     VULN=`echo $OUTPUT | grep vulnerable`
     if [[ ! -z $VULN ]]
     then
@@ -100,7 +116,7 @@ do
 
     echo "  <td class=\"$CLASS\">$OUTPUT</td>" >> $HTML
     CLASS="ui-widget-content"
-    OUTPUT=`grep Output: $ADMIN/servers/$i/bash.vulnerable | tail -3 | head -1`
+    OUTPUT=`grep Output: ${ADMIN}/servers/$i/bash.vulnerable | tail -3 | head -1`
     DATE=`date +"%b"`
     VULN=`echo $OUTPUT | grep $DATE`
     if [[ ! -z $VULN ]]
@@ -110,7 +126,7 @@ do
 
     echo "  <td class=\"$CLASS\">$OUTPUT</td>" >> $HTML
     CLASS="ui-widget-content"
-    OUTPUT=`grep Output: $ADMIN/servers/$i/bash.vulnerable | tail -2 | head -1`
+    OUTPUT=`grep Output: ${ADMIN}/servers/$i/bash.vulnerable | tail -2 | head -1`
     VULN=`echo $OUTPUT | grep vulnerable`
     if [[ ! -z $VULN ]]
     then
@@ -119,7 +135,7 @@ do
 
     echo "  <td class=\"$CLASS\">$OUTPUT</td>" >> $HTML
     CLASS="ui-widget-content"
-    OUTPUT=`grep Output: $ADMIN/servers/$i/bash.vulnerable | tail -1`
+    OUTPUT=`grep Output: ${ADMIN}/servers/$i/bash.vulnerable | tail -1`
     VULN=`echo $OUTPUT | grep vulnerable`
     if [[ ! -z $VULN ]]
     then

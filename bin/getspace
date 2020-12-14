@@ -3,12 +3,30 @@
 # getspace - Retrieve the output of df -k
 # Owner: Carl Schelin
 
-PROGNAME="getspace"
-LOC=/usr/local/admin
-CHECK=$LOC/etc/diskspace.dat
-FILESYSTEMS=$LOC/etc/filesystems
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
 
-for i in `grep -v "^#" $LOC/etc/servers`
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! ${RUNBY} -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="getspace"
+
+CHECK=${ADMIN_DATA}/diskspace.dat
+FILESYSTEMS=${ADMIN_DATA}/filesystems
+
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -18,7 +36,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -118,20 +136,21 @@ do
   then
     if [[ $OS = "Linux" || $OS = "SunOS" || $OS = "HP-UX" || $OS = "FreeBSD" ]]
     then
+#disk partitions that we want to check specifically
       for j in `egrep "^(/dev|all_space|cloifs_pool|diskpool|rpool|sanpool|space|syslog_local|syslog_san)/" $SVRPATH/diskspace.output | awk '{print $NF":"$5}'`
       do
         FILESYSTEM=`echo $j | cut -f1 -d:`
         SPACE=`echo $j | cut -f2 -d: | cut -f1 -d%`
 
         WARNING=85
-        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f3 -d:`
+        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" ${CHECK} | cut -f3 -d:`
         if [ ! "$SPCHK" = "" ]
         then
           WARNING=$SPCHK
         fi
 
         ERROR=95
-        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" $CHECK | cut -f4 -d:`
+        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" ${CHECK} | cut -f4 -d:`
         if [ ! "$SPCHK" = "" ]
         then
           ERROR=$SPCHK
@@ -143,7 +162,7 @@ do
           echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
           echo "ERROR: $FILESYSTEM has reached ${SPACE}%"
 
-# we have a filesystems file in /usr/local/admin/etc/filesystems. It has servername:filesystem:group name
+# we have a filesystems file in ${ADMIN_DATA}/filesystems. It has servername:filesystem:group name
           grep "${SERVER}:${FILESYSTEM}:Database Administration SFS" ${FILESYSTEMS}
           if [[ $? -eq 0 ]]
           then
@@ -193,18 +212,6 @@ do
             echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
           fi
 
-# old way; in case it doesn't work in the morning
-#          CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
-#          if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
-#          then
-#            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
-#          fi
-#
-#          if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
-#          then
-#            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
-#          fi
-		
         else
           if [[ $SPACE -ge $WARNING ]]
           then
@@ -261,19 +268,6 @@ do
             then
               echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
             fi
-
-
-# old way; in case it doesn't work in the morning
-#            CHKSPACE=`echo $FILESYSTEM | egrep "(/(u|d)[0-9][0-9]|cbc_oracle_data|activemq_data|postgresql_db|postgresql_wal|cbc_shared_data|informix|datadbs|databackup)"`
-#            if [[ ! -z $CHKSPACE || $FILESYSTEM = "/ilearning" ]]
-#            then
-#              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
-#            fi
-#
-#            if [ `grep $SERVER /usr/local/httpd/htsecure/inventory/servers.web` -a "$FILESYSTEM" = "/opt" ]
-#            then
-#              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
-#            fi
           fi
         fi
       done

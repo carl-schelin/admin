@@ -2,29 +2,50 @@
 
 # create the chksudo.good file used to identify TMPROOT users
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! ${RUNBY} -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="mkgoodsudo"
+
 ADMIN=/usr/local/admin
+
 YEAR=`date +"%Y"`
 MON=`date +"%m"`
 DAY=`date +"%d"`
 
 echo "clearing"
 # clear out the old chksudo.good and chksudo.diff files and create an empty new chksudo.good file
-for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:`
 do
-  if [[ -f $ADMIN/servers/$i/chksudo.good ]]
+  if [[ -f ${ADMIN}/servers/$i/chksudo.good ]]
   then
-    rm $ADMIN/servers/$i/chksudo.good
+    rm ${ADMIN}/servers/$i/chksudo.good
   fi
-  touch $ADMIN/servers/$i/chksudo.good
-  if [[ -f $ADMIN/servers/$i/chksudo.diff ]]
+  touch ${ADMIN}/servers/$i/chksudo.good
+  if [[ -f ${ADMIN}/servers/$i/chksudo.diff ]]
   then
-    rm $ADMIN/servers/$i/chksudo.diff
+    rm ${ADMIN}/servers/$i/chksudo.diff
   fi
 done
 
 echo "creating"
 # using the data file, create new chksudo.good files
-for i in `sort $ADMIN/etc/chksudo.dat`
+for i in `sort ${ADMIN_DATA}/chksudo.dat`
 do
   SERVER=`echo $i|cut -f1 -d:`
   USER=`echo $i|cut -f2 -d:`
@@ -33,7 +54,7 @@ do
   TKDAY=`echo $i|cut -f4 -d:|cut -f2 -d/`
   FLAG=0
 
-  if [[ -s $ADMIN/servers/$SERVER/chksudo.good ]]
+  if [[ -s ${ADMIN}/servers/$SERVER/chksudo.good ]]
   then
     COMMA=","
   else
@@ -63,16 +84,16 @@ do
 
   if [[ $FLAG = 0 ]]
   then
-    /usr/ucb/echo -n "${COMMA} ${USER}" >> $ADMIN/servers/$SERVER/chksudo.good
+    echo -n "${COMMA} ${USER}" >> ${ADMIN}/servers/${SERVER}/chksudo.good
   fi
 done
 
 echo "finishing"
-for i in `grep -v "^#" $ADMIN/etc/servers | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN}/etc/servers | cut -f1 -d:`
 do
-  if [[ -s $ADMIN/servers/$i/chksudo.good ]]
+  if [[ -s ${ADMIN}/servers/$i/chksudo.good ]]
   then
-    echo "" >> $ADMIN/servers/$i/chksudo.good
+    echo "" >> ${ADMIN}/servers/$i/chksudo.good
   fi
 done
 

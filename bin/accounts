@@ -1,13 +1,37 @@
 #!/bin/bash
 
-ADMIN=/usr/local/admin
+# Carl Schelin
+# merge account information from the password and group file into the inventory
+
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="processetc"
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="accounts"
+
 DATE=$(date +"%w")
 
 if [[ ! -z $1 ]]
 then
-  TARGET=$(grep "${1}" "${ADMIN}"/etc/servers | grep -v "^#")
+  TARGET=$(grep "${1}" "${ADMIN_DATA}"/servers | grep -v "^#")
 else
-  TARGET=$(grep -v "^#" "${ADMIN}"/etc/servers)
+  TARGET=$(grep -v "^#" "${ADMIN_DATA}"/servers)
 fi
 
 if [[ -z "${TARGET}" ]]
@@ -35,51 +59,51 @@ do
   if [[ -f ${ADMIN}/servers/"${SERVER}"/passwd ]] && [[ -f ${ADMIN}/servers/"${SERVER}"/passwd ]]
   then
 # no matter what, if it's Friday, do a full import of both passwd and group files
-    if [[ $DATE = 5 ]]
+    if [[ $DATE -eq 5 ]]
     then
       /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
-      cp $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good
-      /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
-      cp $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good
+      cp ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good
+      /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
+      cp ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good
     else
 
 # now, for non-Fridays, we only want to do an import if the users or groups information has changed.
 # certainly if the password or group file doesn't have a .good file, import the data, done
-      if [[ ! -f $ADMIN/servers/$SERVER/passwd.good ]]
+      if [[ ! -f ${ADMIN}/servers/${SERVER}/passwd.good ]]
       then
         /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
-        cp $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good
+        cp ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good
       fi
-      if [[ ! -f $ADMIN/servers/$SERVER/group.good ]]
+      if [[ ! -f ${ADMIN}/servers/${SERVER}/group.good ]]
       then
         /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
-        cp $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good
+        cp ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good
       fi
 
 # now we run a diff against the file and .good file.
-      diff $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good > $ADMIN/servers/$SERVER/passwd.diff
-      diff $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good > $ADMIN/servers/$SERVER/group.diff
+      diff ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good > ${ADMIN}/servers/${SERVER}/passwd.diff
+      diff ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good > ${ADMIN}/servers/${SERVER}/group.diff
 
 # if the .diff file is 0 bytes, delete it. This keeps it from loading again unless it's friday.
-      if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
+      if [[ -s ${ADMIN}/servers/${SERVER}/passwd.diff ]]
       then
-        rm $ADMIN/servers/$SERVER/passwd.diff
+        rm ${ADMIN}/servers/${SERVER}/passwd.diff
       fi
-      if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
+      if [[ -s ${ADMIN}/servers/${SERVER}/group.diff ]]
       then
-        rm $ADMIN/servers/$SERVER/group.diff
+        rm ${ADMIN}/servers/${SERVER}/group.diff
       fi
 
 # if the .diff file exists, then something has changed. Update the inventory
-      if [[ -s $ADMIN/servers/$SERVER/passwd.diff ]]
+      if [[ -s ${ADMIN}/servers/${SERVER}/passwd.diff ]]
       then
         /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
-        cp $ADMIN/servers/$SERVER/passwd $ADMIN/servers/$SERVER/passwd.good
+        cp ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good
       fi
-      if [[ -s $ADMIN/servers/$SERVER/group.diff ]]
+      if [[ -s ${ADMIN}/servers/${SERVER}/group.diff ]]
       then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" $ADMIN/servers/"${SERVER}"/group
-        cp $ADMIN/servers/$SERVER/group $ADMIN/servers/$SERVER/group.good
+        /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
+        cp ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good
       fi
     fi
   else

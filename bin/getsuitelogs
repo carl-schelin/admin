@@ -4,11 +4,29 @@
 # Owner: Carl Schelin
 # 2013-11-07 - Changed script name to getsuitelogs to avoid confusion with the main getunixsuite script. 
 
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
 PROGNAME="getsuitelogs"
-LOC=/usr/local/admin
+
 TODAY=`/usr/bin/date +"%a %b %e"`
 
-for i in `grep -v "^#" $LOC/etc/servers`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
@@ -16,7 +34,7 @@ do
 # Check to make sure the target directory exists
 # if not, create it and set the perms
 
-  SVRPATH="$LOC/servers/$SERVER"
+  SVRPATH="${ADMIN}/servers/$SERVER"
 
   if [ ! -d $SVRPATH ]
   then
@@ -35,7 +53,7 @@ do
     rm $SVRPATH/$CONTENT
   fi
 
-  /usr/bin/scp $SERVER:/opt/unixsuite/etc/$CONTENT $SVRPATH &
+  /usr/bin/scp $SERVER:${SCRIPTS_LOGS}/$CONTENT $SVRPATH &
   PID=$!
 
 # wait for the specified number of seconds for scp to complete

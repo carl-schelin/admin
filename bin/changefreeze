@@ -23,26 +23,26 @@ then
   echo "Usage:"
   echo "  changefreeze [on | enable | off | disable ]"
   echo "Where:"
-  echo " - on/enable   - Creates the $SCRIPTS_DATA/changefreeze file"
-  echo " - off/disable - Deletes the $SCRIPTS_DATA/changefreeze file"
+  echo " - on/enable   - Creates the ${SCRIPTS_DATA}/changefreeze file"
+  echo " - off/disable - Deletes the ${SCRIPTS_DATA}/changefreeze file"
   echo ""
   exit 1
 fi
 
 if [[ $1 = 'on' ]] || [[ $1 = 'enable' ]]
 then
-  for i in $(grep -v "^#" $ADMIN_DATA/servers | cut -f1 -d:)
+  for i in $(grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:)
   do
 # just copy any file out
-    scp $ADMIN/bin/changefreeze "${i}":$SCRIPTS_DATA/
+    scp ${ADMIN_BINS}/changefreeze "${i}":${SCRIPTS_DATA}/
   done
 fi
 
 if [[ $1 = 'off' ]] || [[ $1 = 'disable' ]]
 then
-  for i in $(grep -v "^#" $ADMIN_DATA/servers | cut -f1 -d:)
+  for i in $(grep -v "^#" ${ADMIN_DATA}/servers | cut -f1 -d:)
   do
-    ssh "${i}" "rm $SCRIPTS_DATA/changefreeze"
+    ssh "${i}" "rm ${SCRIPTS_DATA}/changefreeze"
   done
 fi
 
