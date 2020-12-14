@@ -1,14 +1,32 @@
 #!/bin/ksh
 
-ADMIN=/usr/local/admin
-HTML=/usr/local/httpd/htsecure/reports/ghost.php
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+PROGNAME="showghost"
+
+HTML="${REPORTS}/ghost.php"
 TOTAL=0
 
 echo "<?php
 # Script: ghost.php
 # Owner: Carl Schelin
 # Coding Standard 3.0 Applied
-# See: https://incowk01/makers/index.php/Coding_Standards
 # Description:
 
   include('settings.php');
@@ -33,8 +51,6 @@ echo "<?php
 <script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.js\"></script>
 <link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/themes/<?php print \$_SESSION['theme']; ?>/jquery-ui.css\">
 <script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/functions/jquery.inventory.js\"></script>
-<script type=\"text/javascript\" language=\"javascript\" src=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.js\"></script>
-<link   rel=\"stylesheet\" type=\"text/css\"            href=\"<?php print \$Siteroot; ?>/css/FormTables/formTables.css\">
 
 </head>
 <body class=\"ui-widget-content\">
@@ -72,16 +88,16 @@ echo "<?php
   <th class=\"ui-state-default\">CVE-2015-0235</th>
 </tr>" > $HTML
 
-for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | grep Linux | cut -f1 -d:`
 do
   SERVER=`echo $i|cut -f1 -d:`
   OS=`echo $i|cut -f3 -d:`
 
-  if [[ -f $ADMIN/servers/$SERVER/ghost.output ]]
+  if [[ -f ${ADMIN}/servers/$SERVER/ghost.output ]]
   then
     COUNT=0
     TOTAL=$(( $TOTAL + 1 ))
-    for j in `cat $ADMIN/servers/$SERVER/ghost.output`
+    for j in `cat ${ADMIN}/servers/$SERVER/ghost.output`
     do
       COUNT=$(( $COUNT + 1 ))
       echo "<tr>" >> $HTML
@@ -101,9 +117,9 @@ do
         OUTPUT="Vulnerable"
         CLASS="ui-state-error"
       fi
-      if [[ -f $ADMIN/servers/$i/ghost.cve ]]
+      if [[ -f ${ADMIN}/servers/$i/ghost.cve ]]
       then
-        VULN=`grep -i "cve-2015-0235" $ADMIN/servers/$i/ghost.cve`
+        VULN=`grep -i "cve-2015-0235" ${ADMIN}/servers/$i/ghost.cve`
         if [[ ! -z $VULN ]]
         then
           OUTPUT="Not Vulnerable (patched)"
