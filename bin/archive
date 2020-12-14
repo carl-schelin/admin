@@ -2,11 +2,30 @@
 
 # archive servers
 # Carl Schelin
-ADMIN=/usr/local/admin
+
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="processetc"
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
 
 for i in $(find ${ADMIN}/servers/. -type d -print | awk -F/ '{print $NF}')
 do
-  OUTPUT=$(egrep -i "^(#$i|$i):" ${ADMIN}/etc/servers | cut -f1 -d:)
+  OUTPUT=$(egrep -i "^(#$i|$i):" ${ADMIN_DATA}/servers | cut -f1 -d:)
 
   if [[ -z "${OUTPUT}" ]]
   then
