@@ -1,6 +1,28 @@
 #!/bin/ksh
 
-ADMIN=/usr/local/admin
+# Carl Schelin
+# list all the users where the admin and other accounts are still set to the default password.
+
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="chkdefault"
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
 if [[ -z $1 ]]
 then
   CHKUSER=$USER
@@ -8,12 +30,12 @@ else
   CHKUSER=$1
 fi
 
-for i in `grep -v "^#" $ADMIN/etc/servers | grep Linux | cut -f1 -d:`
+for i in `grep -v "^#" ${ADMIN_DATA}/servers | grep Linux | cut -f1 -d:`
 do
 
-  if [[ -f $ADMIN/servers/$i/chkserver.output ]]
+  if [[ -f ${ADMIN}/servers/${i}/chkserver.output ]]
   then
-    OUTPUT=`grep 31m $ADMIN/servers/$i/chkserver.output | grep -i "${CHKUSER} account password is still set"`
+    OUTPUT=`grep 31m ${ADMIN}/servers/${i}/chkserver.output | grep -i "${CHKUSER} account password is still set"`
 
     if [[ ! -z $OUTPUT ]]
     then
