@@ -25,7 +25,7 @@ SCRIPTS_BINS=${SCRIPTS}/bin
 SCRIPTS_DATA=${SCRIPTS}/etc
 SCRIPTS_LOGS=${SCRIPTS}/logs
 HOSTNAME=`hostname|cut -f1 -d.`
-LOG=$SCRIPT_LOGS/getunixsvc/getunixsvc.log
+LOG=$SCRIPTS_LOGS/getunixsvc/getunixsvc.log
 EXITCODE=0
 OS=`uname`
 DATE=`date +"%Y%m%d"`
@@ -59,9 +59,9 @@ chmod -R 770 $SCRIPTS_LOGS/getunixsvc
 # function to run the scripts and set a timeout. this ensures all scripts exit before the final cleanup
 runscript () {
 
-  if [[ -f $SCRIPT/bin/$1 ]]
+  if [[ -f ${SCRIPTS_BINS}/$1 ]]
   then
-    $SCRIPT/bin/$1 >> $LOG &
+    ${SCRIPTS_BINS}/$1 >> $LOG &
 #    PID=$!
 #
 ## really just wait for the scripts to end. don't expect it to take long.
@@ -178,7 +178,7 @@ runscript getiostat
 runscript getkernel
 
 # checks the mount status on linux systems
-runscript getmounts
+#runscript getmounts
 
 # a bit more complcated; extra comparisons or validates vs a straight copy or copy/compare.
 
@@ -194,9 +194,9 @@ runscript getsudo
 runscript gettime
 runscript getmpathd
 runscript chkcfg2html
-runscript gethpevent
-runscript getunixsuitelogs
-runscript amberck.pl
+#runscript gethpevent
+runscript getsuitelogs
+#runscript amberck.pl
 runscript getusers
 runscript getsudoers
 runscript getservices
