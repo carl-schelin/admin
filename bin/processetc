@@ -94,7 +94,7 @@ do
   then
     cp $SVRPATH/etc.tar.gz $TMPPATH/
     cd $TMPPATH
-    gzip -dc etc.tar.gz | tar fx
+    gzip -dc etc.tar.gz | tar fx -
   fi
 
   echo "Processing: $SERVER"
