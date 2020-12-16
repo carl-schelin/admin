@@ -61,7 +61,7 @@ runscript () {
 
   if [[ -f ${SCRIPTS_BINS}/$1 ]]
   then
-    ${SCRIPTS_BINS}/$1 >> $LOG &
+    ${SCRIPTS_BINS}/$1 >> $LOG
 #    PID=$!
 #
 ## really just wait for the scripts to end. don't expect it to take long.
