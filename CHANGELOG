@@ -1,0 +1,2 @@
+Removed any company specific information moving some of it into the .config file which is not managed by this repo.
+Rewrote the update.forward script to use information from the .config file in a loop instead of the specific email addresses that were there.
