@@ -132,145 +132,148 @@ do
     chmod 664 $SVRPATH/$CONTENT.output
   fi
 
-  if [[ -f $SVRPATH/$CONTENT.output ]]
+  if [[ -f $FILESYSTEM ]]
   then
-    if [[ $OS = "Linux" || $OS = "SunOS" || $OS = "HP-UX" || $OS = "FreeBSD" ]]
+    if [[ -f $SVRPATH/$CONTENT.output ]]
     then
+      if [[ $OS = "Linux" || $OS = "SunOS" || $OS = "HP-UX" || $OS = "FreeBSD" ]]
+      then
 #disk partitions that we want to check specifically
-      for j in `egrep "^(/dev|all_space|cloifs_pool|diskpool|rpool|sanpool|space|syslog_local|syslog_san)/" $SVRPATH/diskspace.output | awk '{print $NF":"$5}'`
-      do
-        FILESYSTEM=`echo $j | cut -f1 -d:`
-        SPACE=`echo $j | cut -f2 -d: | cut -f1 -d%`
+        for j in `egrep "^(/dev|all_space|cloifs_pool|diskpool|rpool|sanpool|space|syslog_local|syslog_san)/" $SVRPATH/diskspace.output | awk '{print $NF":"$5}'`
+        do
+          FILESYSTEM=`echo $j | cut -f1 -d:`
+          SPACE=`echo $j | cut -f2 -d: | cut -f1 -d%`
 
-        WARNING=85
-        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" ${CHECK} | cut -f3 -d:`
-        if [ ! "$SPCHK" = "" ]
-        then
-          WARNING=$SPCHK
-        fi
+          WARNING=85
+          SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" ${CHECK} | cut -f3 -d:`
+          if [ ! "$SPCHK" = "" ]
+          then
+            WARNING=$SPCHK
+          fi
 
-        ERROR=95
-        SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" ${CHECK} | cut -f4 -d:`
-        if [ ! "$SPCHK" = "" ]
-        then
-          ERROR=$SPCHK
-        fi
+          ERROR=95
+          SPCHK=`grep "^${SERVER}:${FILESYSTEM}:" ${CHECK} | cut -f4 -d:`
+          if [ ! "$SPCHK" = "" ]
+          then
+            ERROR=$SPCHK
+          fi
 
-        if [[ $SPACE -ge $ERROR ]]
-        then
-          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
-          echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
-          echo "ERROR: $FILESYSTEM has reached ${SPACE}%"
+          if [[ $SPACE -ge $ERROR ]]
+          then
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
+            echo "ERROR: $FILESYSTEM has reached ${SPACE}%"
 
 # we have a filesystems file in ${ADMIN_DATA}/filesystems. It has servername:filesystem:group name
-          grep "${SERVER}:${FILESYSTEM}:Database Administration SFS" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
-          fi
-
-          grep "${SERVER}:${FILESYSTEM}:Datavail" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.datavail.status
-          fi
-
-          grep "${SERVER}:${FILESYSTEM}:System Administration Web Applications SFS" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
-          fi
-
-# the IEN Voice team is different as there are two teams that merged into one.
-          grep "${SERVER}:${FILESYSTEM}:System Administration (IENV) and i3 SFS" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
-          fi
-
-          grep "${SERVER}:${FILESYSTEM}:System Administration IENV and (i3) SFS" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
-          fi
-
-          grep "${SERVER}:${FILESYSTEM}:System Administration ALIM SFS" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.alim.status
-          fi
-
-          grep "${SERVER}:${FILESYSTEM}:Systems Administration Mobility SFS" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.mobility.status
-          fi
-
-          grep "${SERVER}:${FILESYSTEM}:Cloud Services Engineering" ${FILESYSTEMS}
-          if [[ $? -eq 0 ]]
-          then
-            echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
-          fi
-
-        else
-          if [[ $SPACE -ge $WARNING ]]
-          then
-            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
-            echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
-            echo "WARNING: $FILESYSTEM has reached ${SPACE}%"
-
-# we have a filesystems file in /usr/local/admin/etc/filesystems. It has servername:filesystem:group name
             grep "${SERVER}:${FILESYSTEM}:Database Administration SFS" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
             fi
 
             grep "${SERVER}:${FILESYSTEM}:Datavail" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.datavail.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.datavail.status
             fi
 
             grep "${SERVER}:${FILESYSTEM}:System Administration Web Applications SFS" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
             fi
 
 # the IEN Voice team is different as there are two teams that merged into one.
             grep "${SERVER}:${FILESYSTEM}:System Administration (IENV) and i3 SFS" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
             fi
 
             grep "${SERVER}:${FILESYSTEM}:System Administration IENV and (i3) SFS" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
             fi
 
             grep "${SERVER}:${FILESYSTEM}:System Administration ALIM SFS" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.alim.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.alim.status
             fi
 
             grep "${SERVER}:${FILESYSTEM}:Systems Administration Mobility SFS" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.mobility.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.mobility.status
             fi
 
             grep "${SERVER}:${FILESYSTEM}:Cloud Services Engineering" ${FILESYSTEMS}
             if [[ $? -eq 0 ]]
             then
-              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
+              echo "ERROR: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
+            fi
+
+          else
+            if [[ $SPACE -ge $WARNING ]]
+            then
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.status
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/morning.status
+              echo "WARNING: $FILESYSTEM has reached ${SPACE}%"
+
+# we have a filesystems file in /usr/local/admin/etc/filesystems. It has servername:filesystem:group name
+              grep "${SERVER}:${FILESYSTEM}:Database Administration SFS" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.dba.status
+              fi
+
+              grep "${SERVER}:${FILESYSTEM}:Datavail" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.datavail.status
+              fi
+  
+              grep "${SERVER}:${FILESYSTEM}:System Administration Web Applications SFS" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.web.status
+              fi
+
+# the IEN Voice team is different as there are two teams that merged into one.
+              grep "${SERVER}:${FILESYSTEM}:System Administration (IENV) and i3 SFS" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+              fi
+
+              grep "${SERVER}:${FILESYSTEM}:System Administration IENV and (i3) SFS" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.ienv.status
+              fi
+  
+              grep "${SERVER}:${FILESYSTEM}:System Administration ALIM SFS" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.alim.status
+              fi
+
+              grep "${SERVER}:${FILESYSTEM}:Systems Administration Mobility SFS" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.mobility.status
+              fi
+
+              grep "${SERVER}:${FILESYSTEM}:Cloud Services Engineering" ${FILESYSTEMS}
+              if [[ $? -eq 0 ]]
+              then
+                echo "WARNING: $FILESYSTEM has reached ${SPACE}%" >> $SVRPATH/config.platforms.status
+              fi
             fi
           fi
-        fi
-      done
+        done
+      fi
     fi
   else
     echo "ERROR: Unable to read diskspace.output file." >> $SVRPATH/config.status
