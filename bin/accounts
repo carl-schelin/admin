@@ -15,15 +15,13 @@ fi
 # Source the configuration file
 . "${DIRNAME}"/../.config
 
-PROGNAME="processetc"
+PROGNAME="accounts"
 
 if [[ ! $RUNBY -eq 5000 ]]
 then
   echo "This script must be run by the Unix Service account."
   exit 0
 fi
-
-PROGNAME="accounts"
 
 DATE=$(date +"%w")
 
@@ -40,7 +38,7 @@ then
   exit 1
 fi
 
-cd /usr/local/httpd/bin
+cd ${PHPSCRIPTS}
 
 echo "Legend:"
 echo "- i = insert user"
@@ -61,9 +59,9 @@ do
 # no matter what, if it's Friday, do a full import of both passwd and group files
     if [[ $DATE -eq 5 ]]
     then
-      /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+      /usr/local/bin/php ${PHPSCRIPTS}/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
       cp ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good
-      /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
+      /usr/local/bin/php ${PHPSCRIPTS}/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
       cp ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good
     else
 
@@ -71,12 +69,12 @@ do
 # certainly if the password or group file doesn't have a .good file, import the data, done
       if [[ ! -f ${ADMIN}/servers/${SERVER}/passwd.good ]]
       then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+        /usr/local/bin/php ${PHPSCRIPTS}/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
         cp ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good
       fi
       if [[ ! -f ${ADMIN}/servers/${SERVER}/group.good ]]
       then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
+        /usr/local/bin/php ${PHPSCRIPTS}/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
         cp ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good
       fi
 
@@ -97,12 +95,12 @@ do
 # if the .diff file exists, then something has changed. Update the inventory
       if [[ -s ${ADMIN}/servers/${SERVER}/passwd.diff ]]
       then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
+        /usr/local/bin/php ${PHPSCRIPTS}/accounts.php p "${SID}" ${ADMIN}/servers/"${SERVER}"/passwd
         cp ${ADMIN}/servers/${SERVER}/passwd ${ADMIN}/servers/${SERVER}/passwd.good
       fi
       if [[ -s ${ADMIN}/servers/${SERVER}/group.diff ]]
       then
-        /usr/local/bin/php /usr/local/httpd/bin/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
+        /usr/local/bin/php ${PHPSCRIPTS}/accounts.php g "${SID}" ${ADMIN}/servers/"${SERVER}"/group
         cp ${ADMIN}/servers/${SERVER}/group ${ADMIN}/servers/${SERVER}/group.good
       fi
     fi

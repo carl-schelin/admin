@@ -4,37 +4,56 @@
 # creates an identification file for each server
 # modified to look for a passed servers file so other groups can participate.
 
-ADMIN=/usr/local/admin
-OUTPUT=$ADMIN/logs/fingerprint
-SERVERS="servers"
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
 
-if [[ ! -z "$1" ]]
+if [[ ! -f ${DIRNAME}/../.config ]]
 then
-  if [[ -f $ADMIN/etc/$1 ]]
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# Source the configuration file
+. "${DIRNAME}"/../.config
+
+PROGNAME="fingerprint"
+
+if [[ ! $RUNBY -eq 5000 ]]
+then
+  echo "This script must be run by the Unix Service account."
+  exit 0
+fi
+
+OUTPUT=${ADMIN_LOGS}/fingerprint
+SERVERS="${ADMIN_DATA}/servers"
+
+if [[ ! -z "${1}" ]]
+then
+  if [[ -f ${ADMIN_DATA}/${1} ]]
   then
-    SERVERS=$1
+    SERVERS=${1}
   fi
 fi
 
-cd /usr/local/httpd/bin
+cd ${PHPSCRIPTS}
 
-for i in `grep -v "^#" $ADMIN/etc/$SERVERS | cut -f1 -d:`
+for i in `grep -v "^#" ${SERVERS} | cut -f1 -d:`
 do
-  SVRPATH=$ADMIN/servers/$i
+  SVRPATH=${SERVERS}/${i}
 
 # make the directory if it doesn't exist
-  if [[ ! -d $SVRPATH ]]
+  if [[ ! -d ${SVRPATH} ]]
   then
-    mkdir $SVRPATH
+    mkdir ${SVRPATH}
   fi
   
 # create the fingerprint file
-  /usr/local/bin/php /usr/local/httpd/bin/fingerprint.php $i > $SVRPATH/fingerprint
+  /usr/local/bin/php ${PHPSCRIPTS}/fingerprint.php ${i} > ${SVRPATH}/fingerprint
 
-  cat $SVRPATH/fingerprint
+  cat ${SVRPATH}/fingerprint
 
 # copy it to the target server
-  scp $SVRPATH/fingerprint $i:/opt/unixsuite/etc/
+  scp ${SVRPATH}/fingerprint ${i}:${SCRIPTS_DATA}
 
 done
 
