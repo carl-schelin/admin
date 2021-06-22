@@ -16,7 +16,7 @@ then
   fi
 fi
 
-cd /usr/local/httpd/bin
+cd /var/www/html/inventory/scripts
 
 for i in `grep -v "^#" $ADMIN/etc/$SERVERS | cut -f1 -d:`
 do
@@ -29,7 +29,7 @@ do
   fi
   
 # create the fingerprint file
-  /usr/local/bin/php /usr/local/httpd/bin/fingerprint.php $i > $SVRPATH/fingerprint
+  /usr/local/bin/php /var/www/html/inventory/scripts/fingerprint.php $i > $SVRPATH/fingerprint
 
   cat $SVRPATH/fingerprint
 
