@@ -39,7 +39,7 @@ cd ${PHPSCRIPTS}
 
 for i in `grep -v "^#" ${SERVERS} | cut -f1 -d:`
 do
-  SVRPATH=${SERVERS}/${i}
+  SVRPATH=${ADMIN}/servers/${i}
 
 # make the directory if it doesn't exist
   if [[ ! -d ${SVRPATH} ]]
