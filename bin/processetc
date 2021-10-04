@@ -104,7 +104,7 @@ do
 
 #########################
 ####
-####  Template: Straight Copy of data from /opt/intrado/etc
+####  Template: Straight Copy of data from /opt/unixsuite/etc
 ####  replace the file name in 'CONTENT': 15 lines (15yy)
 ####
 #########################
@@ -126,7 +126,7 @@ do
 
 #########################
 ####
-####  Template: Copy and compare of data from /opt/intrado/etc 
+####  Template: Copy and compare of data from /opt/unixsuite/etc 
 ####  to the .good file in the servers directory
 ####  replace the file name in 'CONTENT': 19 lines (19yy)
 ####
@@ -424,7 +424,7 @@ do
 #runscript gethpevent
 #runscript getif
 #runscript getiostat
-#runscript getintradologs
+#runscript getunixsuitelogs
 #runscript getkernal
 
 #++++++++++++++++++++++++++++++++++++++++++

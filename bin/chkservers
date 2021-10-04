@@ -82,7 +82,7 @@ then
     then
       TEAM="WebApps"
       SERVERFILE=${SCRIPTS_ETC}/servers.web
-      WHOCARES="WebApplicationsTeam@intrado.com"
+      WHOCARES="webapps@internal.pri"
       LOG=/var/tmp/webapps.servers.output
       CHKPID=/var/tmp/webapps.servers.pid
       MAIL=/var/tmp/webapps.servers.mail
@@ -96,7 +96,7 @@ then
       then
         TEAM="DBAs"
         SERVERFILE=${SCRIPTS_ETC}/servers.dba
-        WHOCARES="DBAGroup@intrado.com"
+        WHOCARES="dbadmins@internal.pri"
         LOG=/var/tmp/dbagroup.servers.output
         CHKPID=/var/tmp/dbagroup.servers.pid
         MAIL=/var/tmp/dbagroup.servers.mail

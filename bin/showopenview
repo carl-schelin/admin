@@ -97,7 +97,7 @@ do
     then
       rm $ADMIN/servers/$i/getovconf.output
     fi
-    scp $i:/opt/intrado/etc/getovconf.output $ADMIN/servers/$i/
+    scp $i:/opt/unixsuite/etc/getovconf.output $ADMIN/servers/$i/
   fi
 
   GETOVCONF="$ADMIN/servers/$i/getovconf.output"

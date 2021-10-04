@@ -34,7 +34,7 @@ do
 
   if [[ $OS = 'Linux' ]]
   then
-    /usr/bin/scp $SERVER:/opt/intrado/etc/$CONTENT.output $SVRPATH/$CONTENT.output 2>&1 &
+    /usr/bin/scp $SERVER:/opt/unixsuite/etc/$CONTENT.output $SVRPATH/$CONTENT.output 2>&1 &
     PID=$!
   fi
 

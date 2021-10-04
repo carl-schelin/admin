@@ -94,8 +94,8 @@ for ($i = 0; $i <= $#users; $i++) {
   $color="ui-widget-content";
   chomp $users[$i];
   (@list) = split(":", $users[$i]);
-#   0       1         2                                       3   4
-#2dallas:hpietras:heather pietras,heather.pietras@intrado.com:yes:active
+#      0            1                2                                       3   4
+#lnmt1cuomtool11 cschelin,carl.schelin@internal.pri
 
   if ($server ne $list[0]) {
     $server = $list[0];
@@ -197,10 +197,8 @@ for ($i = 0; $i <= $#users; $i++) {
 #       if exceeds date, flag as expired
 #     else
 #       flag as not in chksudo
-#   0       1         2                                       3   4
-#2dallas:hpietras:heather pietras,heather.pietras@intrado.com:yes:active
-#   0      1      2      3
-#2dallas:kzupan:999999:30000101
+#      0            1                2                                       3   4
+#lnmt1cuomtool11 cschelin,carl.schelin@internal.pri
 # updated to change the date format
 
     if ($arg ne "web") {

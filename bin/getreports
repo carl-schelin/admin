@@ -8,13 +8,20 @@
 #
 # Changelog:
 
-SCRIPTS=/usr/local/admin
-SCRIPTS_BINS=$SCRIPTS/bin
-SCRIPTS_DATA=$SCRIPTS/etc
-SCRIPTS_VARS=$SCRIPTS/var
-SCRIPTS_LOGS=$SCRIPTS/logs
+BASENAME=$(basename "$0")
+DIRNAME=$(dirname "$0")
+
+if [[ ! -f ${DIRNAME}/../.config ]]
+then
+  echo "Unable to locate ${DIRNAME}/../.config. Exiting."
+  exit 1
+fi
+
+# shellcheck source=/dev/null
+. "${DIRNAME}"/../.config
+
 HOSTNAME=`hostname|cut -f1 -d.`
-LOG=$SCRIPTS_VARS/getreports.log
+LOG=$ADMIN_LOGS/getreports.log
 EXITCODE=0
 OS=`uname`
 DATE=`date +"%Y%m%d"`
@@ -24,17 +31,17 @@ DOWEEK=`date +"%u"`
 DOMONTH=`date +"%d"`
 
 # ensure directories exist and are writeable
-if [[ ! -d $SCRIPTS_VARS ]]
+if [[ ! -d $ADMIN_VARS ]]
 then
-  mkdir -p $SCRIPTS_VARS
-  chown unixsvc:sysadmin $SCRIPTS_VARS
-  chmod 770 $SCRIPTS_VARS
+  mkdir -p $ADMIN_VARS
+  chown unixsvc:sysadmin $ADMIN_VARS
+  chmod 770 $ADMIN_VARS
 fi
-if [[ ! -d $SCRIPTS_DATA ]]
+if [[ ! -d $ADMIN_DATA ]]
 then
-  mkdir -p $SCRIPTS_DATA
-  chown unixsvc:sysadmin $SCRIPTS_DATA
-  chmod 770 $SCRIPTS_DATA
+  mkdir -p $ADMIN_DATA
+  chown unixsvc:sysadmin $ADMIN_DATA
+  chmod 770 $ADMIN_DATA
 fi
 
 echo "`date` reports script started" >> $LOG

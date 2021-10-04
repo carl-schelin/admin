@@ -19,7 +19,7 @@ fi
 
 PROGNAME="getnofile"
 BODY=""
-WHOCARES="WebApplicationsTeam@intrado.com boominathan.shanmugham2@intrado.com"
+WHOCARES="webapps@internal.pri"
 
 for i in lnmtcodc9n11:Linux lnmtcodc9n21:Linux lnmtcodc9n31:Linux
 do
