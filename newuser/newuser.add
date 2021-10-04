@@ -1,6 +1,6 @@
 #!/bin/ksh
 
-# added verifyemail check of @ to tack on @intrado.com if it's not there
+# added verifyemail check of @ to tack on @internal.pri if it's not there
 
 if [[ -z "$1" ]]
 then
@@ -11,7 +11,7 @@ then
   echo ""
   echo "uid = The user name; first initial, last name"
   echo "user_name = The name of the user. Initial first and last name capitalized separated by an underscore, not a space."
-  echo "e-mail = The e-mail address to the left of the @. Do not include '@intrado.com'."
+  echo "e-mail = The e-mail address to the left of the @. Do not include '@internal.pri'."
   echo "mentor = The person's account you are using as a base for the new account. Defaults to cschelin."
   echo "group = The group the new user should be a member of."
   echo "id = If the account needs to be a specific ID, put it here."
@@ -48,11 +48,11 @@ USER=`echo $2 | sed -e "s/_/ /g"`
 USERID=$1
 # e-mail info. $EMAIL should be a valid address
 EMAIL=$3
-# account for someone putting '@intrado.com' or even a non-Intrado email in the email field
+# account for someone putting '@internal.pri' or even a non-Schelin email in the email field
 VERIFYEMAIL=`echo $EMAIL | grep @`
 if [[ -z "$VERIFYEMAIL" ]]
 then
-  EMAIL="${EMAIL}@intrado.com"
+  EMAIL="${EMAIL}@internal.pri"
 fi
 
 #######
@@ -121,7 +121,7 @@ ID="$6"
 # indicating the server does have this requirement.
 if [[ $ID = '-1' ]]
 then
-  if [[ -f /opt/intrado/etc/required.uid ]]
+  if [[ -f /opt/unixsuite/etc/required.uid ]]
   then
     echo "ERROR: The UID field isn't set and this server has been identified as requiring this data."
     echo "Last five UIDs from /etc/passwd:"
