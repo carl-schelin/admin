@@ -2,7 +2,7 @@
 
 # getif - Retrieve the output of ifconfig -a
 # Owner: Carl Schelin
-# 8/15/11 - retrieve data from /opt/intrado/etc. change timeout to 180 seconds
+# 8/15/11 - retrieve data from /opt/unixsuite/etc. change timeout to 180 seconds
 
 BASENAME=$(basename "$0")
 DIRNAME=$(dirname "$0")

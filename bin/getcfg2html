@@ -2,7 +2,7 @@
 
 # getcfg2html - Retrieve the Config 2 Html output from all boxes
 # Owner: Carl Schelin
-# 2/6/09 - TO - added incoga10/20 incoag10/20 to "renamed" servers
+# 2/6/09 - TO - added servers to "renamed" servers
 # 2/6/09 - TO - Reveresed the order of the index page to most recent first
 # 10/8/09 - TO - added Canada servers to renamed portion
 # 10/1/10 - Pietras - added miamflcsmla15 to renamed portion as "n1" 

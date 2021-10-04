@@ -85,65 +85,6 @@ do
     fi
   fi
 
-  if [[ $SERVER = "bart" ]]
-  then
-    SERVER="$SERVER/simpson"
-  fi
-  if [[ $SERVER = "cowh01" ]]
-  then
-    SERVER="$SERVER/ics0"
-  fi
-  if [[ $SERVER = "cowh02" ]]
-  then
-    SERVER="$SERVER/ics0"
-  fi
-  if [[ $SERVER = "homer" ]]
-  then
-    SERVER="$SERVER/simpson"
-  fi
-  if [[ $SERVER = "incoce03" ]]
-  then
-    SERVER="$SERVER/incoce00"
-  fi
-  if [[ $SERVER = "incoce04" ]]
-  then
-    SERVER="$SERVER/incoce00"
-  fi
-  if [[ $SERVER = "lldb01" ]]
-  then
-    SERVER="$SERVER/nrlldb0"
-  fi
-  if [[ $SERVER = "lldb02" ]]
-  then
-    SERVER="$SERVER/nrlldb0"
-  fi
-  if [[ $SERVER = "lmpc0a" ]]
-  then
-    SERVER="$SERVER/lmpc0"
-  fi
-  if [[ $SERVER = "lmpc0b" ]]
-  then
-    SERVER="$SERVER/lmpc0"
-  fi
-  if [[ $SERVER = "mpc01" ]]
-  then
-    SERVER="$SERVER/impc0"
-  fi
-  if [[ $SERVER = "mpc02" ]]
-  then
-    SERVER="$SERVER/impc0"
-  fi
-  if [[ $SERVER = "mpc11" ]]
-  then
-    SERVER="$SERVER/impc1"
-  fi
-  if [[ $SERVER = "mpc12" ]]
-  then
-    SERVER="$SERVER/impc1"
-  fi
-
-
-
   echo "update inventory set inv_os=\"$VERSION\" where inv_name = \"$SERVER\";"
 done
 

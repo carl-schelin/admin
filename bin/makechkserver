@@ -10,7 +10,7 @@ echo "#" >> chkserver.message
 
 # get the merge file from the source
 
-scp lnmt1cuomrcs1:/opt/static/intrado/etc/chkserver.merge .
+scp lnmt1cuomrcs1:/opt/static/unixsuite/etc/chkserver.merge .
 
 cat chkserver chkserver.merge | sort | uniq > chkserver.output
 
