@@ -52,7 +52,7 @@ do
   fi
   if [[ ! -f $RRDPATH/$i/index.php ]]
   then
-    cp $RRDPATH/incojs01/index.php $RRDPATH/$i
+    cp $RRDPATH/lnmt1cuomjs1/index.php $RRDPATH/$i
   fi
   if [[ -f $RRDPATH/$i/cpu-day.png ]]
   then

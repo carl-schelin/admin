@@ -10,7 +10,7 @@ print "<?php\n";
 print "# Script: $SCRIPT\n";
 print "# Owner: Carl Schelin\n";
 print "# Coding Standard 3.0 Applied\n";
-print "# See: https://incowk01/makers/index.php/Coding_Standards\n";
+print "# See: https://lnmt1cuomwiki1/makers/index.php/Coding_Standards\n";
 print "# Description:\n";
 print "\n";
 print "  include('settings.php');\n";
@@ -140,56 +140,6 @@ for ($i = 0; $i <= $#users; $i++) {
 #  if ($color eq "ui-state-error") {
 
     $svrname = $list[0];
-# Have to put in substitutes for servers that are different on host vs the name we know them by.
-    $svrname = "coolcadccba01"	if ($list[0] eq "coolcadccba10");
-    $svrname = "coolcadccba02"	if ($list[0] eq "coolcadccba20");
-    $svrname = "coolcadctxb1"	if ($list[0] eq "coolcadctxb0");
-    $svrname = "denora"		if ($list[0] eq "den-ora");
-    $svrname = "dalora"		if ($list[0] eq "dal-ora");
-    $svrname = "dthvcadccba01"	if ($list[0] eq "dthvcadccba10");
-    $svrname = "dthvcadccba02"	if ($list[0] eq "dthvcadccba20");
-    $svrname = "dthvcadctxb1"	if ($list[0] eq "dthvcadctxb0");
-    $svrname = "enwdcodctxb1"	if ($list[0] eq "enwdcodctxb0");
-    $svrname = "incoag13"	if ($list[0] eq "incoag10");
-    $svrname = "incoag23"	if ($list[0] eq "incoag20");
-    $svrname = "incoesg1"	if ($list[0] eq "coesg1");
-    $svrname = "incoesg2"	if ($list[0] eq "coesg2");
-    $svrname = "incofmc1"	if ($list[0] eq "cofmcc1");
-    $svrname = "incofmc2"	if ($list[0] eq "cofmcc2");
-    $svrname = "incofmc3"	if ($list[0] eq "cofmcc3");
-    $svrname = "incoga13"	if ($list[0] eq "incoga10");
-    $svrname = "incoga23"	if ($list[0] eq "incoga20");
-    $svrname = "inflesg1"	if ($list[0] eq "flesg1");
-    $svrname = "inflesg2"	if ($list[0] eq "flesg2");
-    $svrname = "inflfmc1"	if ($list[0] eq "flfmcc1");
-    $svrname = "inflfmc2"	if ($list[0] eq "flfmcc2");
-    $svrname = "inflfmc3"	if ($list[0] eq "flfmcc3");
-    $svrname = "inveri01"	if ($list[0] eq "inveri01-gig0");
-    $svrname = "inilfmc1"	if ($list[0] eq "ilfmcc1");
-    $svrname = "inilfmc2"	if ($list[0] eq "ilfmcc2");
-    $svrname = "inilfmc3"	if ($list[0] eq "ilfmcc3");
-    $svrname = "lnmtcocsmla15"	if ($list[0] eq "n1");
-    $svrname = "lnmtcodcag11"	if ($list[0] eq "lnmtcodcag10");
-    $svrname = "lnmtcodcag21"	if ($list[0] eq "lnmtcodcag20");
-    $svrname = "lnmtcodccba01"	if ($list[0] eq "lnmtcodccba10");
-    $svrname = "lnmtcodccba02"	if ($list[0] eq "lnmtcodccba20");
-    $svrname = "lnmtcodcdla11"	if ($list[0] eq "lnmtcodcdla1");
-    $svrname = "lnmtcodcdla21"	if ($list[0] eq "lnmtcodcdla2");
-    $svrname = "lnmtcodcdva11"	if ($list[0] eq "lnmtcodcdva1");
-    $svrname = "lnmtcodcdva21"	if ($list[0] eq "lnmtcodcdva2");
-    $svrname = "lnmtcodcdvb11"	if ($list[0] eq "lnmtcodcdvb1");
-    $svrname = "lnmtcodcdvb21"	if ($list[0] eq "lnmtcodcdvb2");
-    $svrname = "lnmtcodcga11"	if ($list[0] eq "lnmtcodcga10");
-    $svrname = "lnmtcodcga21"	if ($list[0] eq "lnmtcodcga20");
-    $svrname = "mapflex1"	if ($list[0] eq "mapflex");
-    $svrname = "miamflcsmla15"	if ($list[0] eq "n1");
-    $svrname = "miamfldccba01"	if ($list[0] eq "miamfldccba10");
-    $svrname = "miamfldccba02"	if ($list[0] eq "miamfldccba20");
-    $svrname = "miamfldctxb1"	if ($list[0] eq "miamfldctxb0");
-    $svrname = "pscafmc1"	if ($list[0] eq "cafmcc1");
-    $svrname = "pscafmc2"	if ($list[0] eq "cafmcc2");
-    $svrname = "pstofmc1"	if ($list[0] eq "tofmcc1");
-    $svrname = "pstofmc2"	if ($list[0] eq "tofmcc2");
 
 # compare the server name in the sudoers array with the server name in the chksudo array
 #   if match, compare the user name in the sudoers array with the user name in the chksudo array

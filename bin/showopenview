@@ -16,7 +16,7 @@ echo "<?php
 # Script: ovgetconf.php
 # Owner: Carl Schelin
 # Coding Standard 3.0 Applied
-# See: https://incowk01/makers/index.php/Coding_Standards
+# See: https://lnmt1cuomwiki1/makers/index.php/Coding_Standards
 # Description:
 
   include('settings.php');
@@ -104,7 +104,7 @@ do
   if [[ -f ${GETOVCONF} ]]
   then
     echo "<tr>" >> $HTML
-    echo "  <td class=\"ui-widget-content\"><a href=\"https://incojs01.scc911.com/servers/$i/getovconf.output\" target=\"_blank\">$i</a></td>" >> $HTML
+    echo "  <td class=\"ui-widget-content\"><a href=\"https://lnmt1cuomjs1.internal.pri/servers/$i/getovconf.output\" target=\"_blank\">$i</a></td>" >> $HTML
     echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_INSTALLED_VERSION/{print $2}' $GETOVCONF`</td>" >> $HTML
     echo "  <td class=\"ui-widget-content\">`awk -F= '/OPC_INSTALLATION_TIME/{print $2}' $GETOVCONF`</td>" >> $HTML
     echo "  <td class=\"ui-widget-content\">`awk -F= '/LAST_CERT_UPDATE/{print $2}' $GETOVCONF`</td>" >> $HTML

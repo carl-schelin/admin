@@ -74,9 +74,9 @@ echo "  <li>ERROR - System problems that need to be reviewed.</li>" >> $HTML
 echo "  <li>WARNING - Issues that might, after a few days, turn in to a failed hard disk or other system problem.</li>" >> $HTML
 echo "</ul>" >> $HTML
 echo "" >> $HTML
-echo "<p>A good copy of the output of the command is saved on incojs01:/usr/local/admin/servers/[servername]. Each night the " >> $HTML
+echo "<p>A good copy of the output of the command is saved on lnmt1cuomjs1:/usr/local/admin/servers/[servername]. Each night the " >> $HTML
 echo "server generates output from the various commands; iostat, metastat, metadb, raidctl, and others. That output is diff'd against " >> $HTML
-echo "the known good file on incojs01. If the diff turns up something, it is noted on this report as an ERROR or WARNING depending " >> $HTML
+echo "the known good file on lnmt1cuomjs1. If the diff turns up something, it is noted on this report as an ERROR or WARNING depending " >> $HTML
 echo "on the perceived severity. Resolving the problem consists of going in to the server directory and copying the current <b>.output</b> " >> $HTML
 echo "file over the same named <b>.good</b> file." >> $HTML
 echo "" >> $HTML
